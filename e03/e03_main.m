@@ -37,7 +37,7 @@ for i=l:-1:1
     end
 end
 
-% plot estimate targets positions
+% plot estimated targets positions
 figure
 colormap("default")
 imagesc(pos)
@@ -55,3 +55,29 @@ imagesc(pos)
 % sensors under attack
 a_tol = a >= 1e-3;
 under_attack = find(a_tol)
+
+% k-NN
+knn = 1e10;
+ind = [];
+
+% brute force approach
+for i = 1:p-2
+    for j = i+1:p-1
+        for k = j+1:p
+            temp = norm(D(:,i) + D(:,j) + D(:,k) - y)^2;
+            if temp < knn
+                knn = temp;
+                ind = [i j k];
+            end
+        end
+    end
+end
+
+% translate vector indeces to matrix' and plot
+pos_knn = zeros(l, l);
+for i = 1:3
+    pos_knn(l - floor(ind(i)/l), rem(ind(i), l)) = 1;
+end
+figure
+colormap("default")
+imagesc(pos_knn)
