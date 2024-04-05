@@ -29,7 +29,12 @@ for i=1:N_SIM
 
     % ista
     tau = norm(C,2)^(-2) - epsilon;
-    [x, a, num_iter] = e02_ista_part_lasso(y, C, n, q, tau, tau_Lambda);
+    G = [C eye(q)];
+    [z, num_iter] = ista_lasso(y, G, n, q, tau, tau_Lambda);
+    
+    % estimated vectors
+    x = z(1:n);
+    a = z(n+1:n+q);
     
     % update variables
     if nnz(x_hat) == nnz(x)
