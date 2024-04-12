@@ -27,7 +27,6 @@ axis square
 str = sprintf(' Positions: \n %d, %d, %d ', targ(1), targ(2), targ(3));
 text(1100,900,str);
 title(str_title)
-pause(1)
 hold off
 
 end
