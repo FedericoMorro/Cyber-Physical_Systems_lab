@@ -43,7 +43,7 @@ for i=l:-1:1
 end
 
 % plot estimated targets positions
-figure
+figure(1)
 colormap("default")
 imagesc(pos)
 title("ISTA: rough targets positions")
@@ -52,27 +52,19 @@ title("ISTA: rough targets positions")
 x_sort = sort(x, 'descend');
 smallest_accepted_value = x_sort(trg);
 x_hat = x >= smallest_accepted_value;
-pos = pos >= smallest_accepted_value;
 
 % plot targets positions
-figure
-colormap("default")
-imagesc(pos)
-title("ISTA: targets positions")
+display_CPS(x_hat, p, 2, "ISTA: targets positions");
 
 % sensors under attack
 a_hat = a >= 1e-3;
 
-% print estimated vectors
+% print output
+fprintf("ISTA\n\tTime: %f s\tIterations number: %i\n", t_elaps, num_iter);
 fprintf("supp{x_hat}\n");
 disp(find(x_hat));
 fprintf("supp{a_hat}\n");
 disp(find(a_hat));
-
-% print output
-fprintf("ISTA\n\tTime: %f s\tIterations number: %i\n", t_elaps, num_iter);
-fprintf("Targets positions\n");
-disp(find(pos));
 
 
 %% k Nearest Neighbors
@@ -82,7 +74,7 @@ ind = [];
 num_iter_knn = 0;       % expected nchoosek(100,3) = 161'700
 
 % brute force approach
-tic
+tic;
 for i = 1:p-2
     for j = i+1:p-1
         for k = j+1:p
@@ -97,18 +89,18 @@ for i = 1:p-2
 end
 t_elaps_knn = toc;
 
-% translate vector indices to matrix' and plot
-pos_knn = zeros(l,l);
-for i = 1:trg
-    pos_knn(l - floor(ind(i)/l), rem(ind(i),l)) = 1;
+% create x_hat
+x_hat_knn = zeros(p,1);
+for i=1:trg
+    x_hat_knn(ind(i)) = true;
 end
-figure
-colormap("default")
-imagesc(pos_knn)
-title("k-NN: targets positions")
+x_hat_knn = x_hat_knn > 0;      % convert to logical array
+
+% plot targets positions
+display_CPS(x_hat_knn, p, 3, "k-NN: targets positions");
 
 % print output
 fprintf("\n\nk-NN\n\tTime: %f s\tIterations number: %i\n", t_elaps_knn, num_iter_knn);
-fprintf("Targets positions\n");
-disp(find(pos_knn));
+fprintf("supp{x_hat_knn}\n");
+disp(find(x_hat_knn));
 fprintf("\n");
