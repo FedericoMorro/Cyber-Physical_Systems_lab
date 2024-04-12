@@ -1,4 +1,4 @@
-function [] = display_CPS(x_hat, n, figure_n, str_title)
+function [] = display_CPS(x_hat, x, n, figure_n, str_title)
 
 H = 10; %height of the grid (# cells)
 L = 10; %length of the grid (# cells)
@@ -12,11 +12,13 @@ for i=1:n
 end
 
 targ = find(x_hat);
+targ_true = find(x);
 
 figure(figure_n)
-plot(room_grid(1,x_hat), room_grid(2,x_hat),'s','MarkerSize',9, 'MarkerEdgeColor',1/255*[40 208 220],'MarkerFaceColor',1/255*[40 208 220])
+plot(room_grid(1,x_hat), room_grid(2,x_hat),'s','MarkerSize',9, 'MarkerEdgeColor',1/255*[40 208 220], 'MarkerFaceColor',1/255*[40 208 220])
+hold on
+plot(room_grid(1,x), room_grid(2,x),'s','MarkerSize',4, 'MarkerEdgeColor',1/255*[220 40 40], 'MarkerFaceColor',1/255*[220 40 40])
 grid on
-legend( 'Targets','Location','eastoutside')
 
 xticks(100:100:1000)
 yticks(100:100:1000)
@@ -24,9 +26,26 @@ xlabel('(cm)')
 ylabel('(cm)')
 axis([0 1000 0 1000])
 axis square
-str = sprintf(' Positions: \n %d, %d, %d ', targ(1), targ(2), targ(3));
-text(1100,900,str);
+
+str = sprintf(' Estimated positions: \n');
+for i=1:length(targ)
+    str = sprintf('%s%d  ', str, targ(i));
+end
+
+if isempty(x)
+    legend({'Estimated targets'}, 'Location', 'bestoutside')
+else
+    legend({'Estimated targets','Actual targets'}, 'Location', 'bestoutside')
+
+    str = sprintf('%s\n\n Actual positions: \n ', str);
+    for i=1:length(targ_true)
+        str = sprintf('%s%d  ', str, targ_true(i));
+    end
+end
+
+text(1100,500,str);
 title(str_title)
+
 hold off
 
 end
