@@ -25,7 +25,8 @@ tau_Lambda = tau * [lambda_1*ones(p,1); lambda_2*ones(q,1)];
 
 % ista
 tic;
-[z, num_iter] = ista_lasso(y, G, p, q, tau, tau_Lambda);
+z0 = zeros(p+q, 1);
+[z, num_iter] = ista_lasso(z0, y, G, p, q, tau, tau_Lambda, false);
 t_elaps = toc;
 x = z(1:p);
 a = z(p+1:p+q);
@@ -50,6 +51,7 @@ title("ISTA: rough targets positions")
 % exploit knowledge about # of targets
 x_sort = sort(x, 'descend');
 smallest_accepted_value = x_sort(trg);
+x_hat = x >= smallest_accepted_value;
 pos = pos >= smallest_accepted_value;
 
 % plot targets positions
@@ -59,15 +61,18 @@ imagesc(pos)
 title("ISTA: targets positions")
 
 % sensors under attack
-a_tol = a >= 1e-3;
-under_attack = find(a_tol);
+a_hat = a >= 1e-3;
+
+% print estimated vectors
+fprintf("supp{x_hat}\n");
+disp(find(x_hat));
+fprintf("supp{a_hat}\n");
+disp(find(a_hat));
 
 % print output
 fprintf("ISTA\n\tTime: %f s\tIterations number: %i\n", t_elaps, num_iter);
 fprintf("Targets positions\n");
 disp(find(pos));
-fprintf("Indexes sensors under attack\n");
-disp(under_attack);
 
 
 %% k Nearest Neighbors

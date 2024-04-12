@@ -1,11 +1,11 @@
-function [z, num_iter] = ista_lasso(y, G, p, q, tau, tau_Lambda)
+function [z, num_iter] = ista_lasso(z0, y, G, p, q, tau, tau_Lambda, one_iter)
 
 % parameters
 delta = 1e-12;
 
 % initialization
 num_iter = 0;
-z = zeros(p+q, 1);
+z = z0;
 z_next = zeros(p+q, 1);     % tmp variable for z(i+1)
 
 % iterations
@@ -27,7 +27,7 @@ while ~exit_cond
     end
 
     % exit condition
-    if norm(z_next-z, 2) < delta
+    if norm(z_next-z, 2) < delta || one_iter
         exit_cond = true;
     end
 

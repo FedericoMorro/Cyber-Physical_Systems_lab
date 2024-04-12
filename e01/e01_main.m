@@ -28,7 +28,8 @@ for i=1:N_SIM
     tau = norm(C,2)^(-2) - epsilon;
     lambda = 1 / (100*tau);
     tau_Lambda = tau*lambda * ones(p,1);
-    [x, num_iter] = ista_lasso(y, C, p, 0, tau, tau_Lambda);
+    z0 = zeros(p, 1);
+    [x, num_iter] = ista_lasso(z0, y, C, p, 0, tau, tau_Lambda, false);
     
     % update vars
     if nnz(x) == nnz(x_hat)

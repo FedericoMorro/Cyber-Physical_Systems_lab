@@ -30,7 +30,8 @@ for i=1:N_SIM
     % ista
     tau = norm(C,2)^(-2) - epsilon;
     G = [C eye(q)];
-    [z, num_iter] = ista_lasso(y, G, n, q, tau, tau_Lambda);
+    z0 = zeros(n+q, 1);
+    [z, num_iter] = ista_lasso(z0, y, G, n, q, tau, tau_Lambda, false);
     
     % estimated vectors
     x = z(1:n);
