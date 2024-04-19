@@ -62,13 +62,8 @@ for k=1:k_fin
     % plot targets positions
     str = sprintf("Iteration %d", k);
     display_CPS(x_hat, x, p, 2, str);
-     
-    %print output
-    fprintf("supp{x_hat}\n");
-    disp(find(x_hat));
-    fprintf("supp{a_hat}\n");
-    disp(find(a_hat));
-    pause(0.5);
+
+    pause(0.2)
 end
 
 
@@ -148,5 +143,6 @@ for k=1:k_fin
     % plot targets positions
     str = sprintf("Iteration %d", k);
     display_CPS(x_hat, x, p, 3, str);
-    pause(0.5);
+
+    pause(0.2);
 end

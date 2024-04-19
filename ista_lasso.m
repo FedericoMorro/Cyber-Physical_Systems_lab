@@ -16,7 +16,7 @@ while ~exit_cond
     for i=1:p+q         % element-wise
         if z_grad(i) > tau_lambda(i)
             z_next(i) = z_grad(i) - tau_lambda(i);
-        elseif z_grad(i) < -tau_lambda(i)
+        elseif z_grad(i) < - tau_lambda(i)
             z_next(i) = z_grad(i) + tau_lambda(i);
         else
             z_next(i) = 0;

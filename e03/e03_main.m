@@ -12,6 +12,7 @@ q = 25;     % # of sensors
 load("localization.mat")        % A, D, y
 
 
+
 %% Ista
 % ista parameters
 lambda_1 = 10;
@@ -63,9 +64,10 @@ a_hat = a >= 1e-3;
 % print output
 fprintf("ISTA\n\tTime: %f s\tIterations number: %i\n", t_elaps, num_iter);
 fprintf("supp{x_hat}\n");
-disp(find(x_hat));
+disp(find(x_hat)');
 fprintf("supp{a_hat}\n");
-disp(find(a_hat));
+disp(find(a_hat)');
+
 
 
 %% k Nearest Neighbors
@@ -103,5 +105,5 @@ display_CPS(x_hat_knn, [], p, 3, "k-NN: targets positions");
 % print output
 fprintf("\n\nk-NN\n\tTime: %f s\tIterations number: %i\n", t_elaps_knn, num_iter_knn);
 fprintf("supp{x_hat_knn}\n");
-disp(find(x_hat_knn));
+disp(find(x_hat_knn)');
 fprintf("\n");

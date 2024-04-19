@@ -13,7 +13,7 @@ trg = 2;    % # of targets
 atk = 2;    % # of sensors under attack
 load('distributed_localization_data.mat');
 
-% algorithms
+% DISTA algorithm
 G = [D eye(q)];
 tau = 4e-7;
 lambda = [10*ones(p,1); 0.1*ones(q,1)];
@@ -22,21 +22,25 @@ delta = 1e-8;
 
 
 %% Preliminary analysis
-% eigenvalue analysis
-eig_Q4 = maxk(abs(eig(Q_4)), 2)
-eig_Q8 = maxk(abs(eig(Q_8)), 2)
-eig_Q12 = maxk(abs(eig(Q_12)), 2)
-eig_Q18 = maxk(abs(eig(Q_18)), 2)
-
-% graphs plot
-figure
-subplot(2,2,1); plot(digraph(Q_4)); title('Q_4');
-subplot(2,2,2); plot(digraph(Q_8)); title('Q_8');
-subplot(2,2,3); plot(digraph(Q_12)); title('Q_{12}');
-subplot(2,2,4); plot(digraph(Q_18)); title('Q_{18}');
-
 % stack setups in a vector
 Q_vec = {Q_4 Q_8 Q_12 Q_18};
+Q_names = {'Q_4' 'Q_8' 'Q_{12}' 'Q_{18}'};
+
+figure(1)
+for Q_index = 1:length(Q_vec)
+    % get current Q
+    Q = cell2mat(Q_vec(Q_index));
+
+    % effective spectral radius analysis
+    fprintf("ESR of ");
+    disp(cell2mat(Q_names(Q_index)));
+    disp(maxk(abs(eig(Q)),2)');
+
+    % plot graph in subplot
+    subplot(2,2,Q_index);
+    plot(digraph(Q));
+    title(Q_names(Q_index));
+end
 
 
 %% ISTA
@@ -70,23 +74,25 @@ display_CPS(x_corr, [], p, 2, str);
 fprintf("\nISTA\n");
 fprintf("# of iterations: %i\n", num_iter);
 fprintf("supp{x}\n");
-disp(find(x_corr));
+disp(find(x_corr)');
 fprintf("supp{a}\n");
-disp(find(a_corr));
+disp(find(a_corr)');
 
 
 
 %% DISTA
 % for each setup
-for Q_cell = Q_vec
+for Q_index = 1:length(Q_vec)
     % modification of ista_lasso.m
-    Q = cell2mat(Q_cell);
+
+    % get current Q
+    Q = cell2mat(Q_vec(Q_index));
 
     % initialization
     k = 1;
     num_iter = 0;
     z = zeros(p+q, q);      % z collects each z^(i) in R^(p+q), for each sensor
-    z_next = zeros(p+q, q);     % tmp variable for z(i+1)
+    z_next = zeros(p+q, q);     % tmp variable for z_{k+1}
     
     % iterations
     exit_cond = false;
@@ -108,7 +114,7 @@ for Q_cell = Q_vec
             for s = 1:p+q         % element-wise on i-th column of z <-> i-th sensor
                 if z_grad(s) > tau_lambda(s)
                     z_next(s,i) = z_grad(s) - tau_lambda(s);
-                elseif z_grad(s) < -tau_lambda(s)
+                elseif z_grad(s) < - tau_lambda(s)
                     z_next(s,i) = z_grad(s) + tau_lambda(s);
                 else
                     z_next(s,i) = 0;
@@ -133,11 +139,9 @@ for Q_cell = Q_vec
     end
 
 
-    %% Estimates
     % get estimated vectors for each sensor
     x_est = z(1:p);        % x_hat(k+1) = A * x_hat^+(k)
-    a_est = z_ista(p+1:p+q);        % a_hat(k+1) = a_hat^+(k)
-    z_hat = [x_est; a_est];
+    a_est = z(p+1:p+q);        % a_hat(k+1) = a_hat^+(k)
 
     % exploit knowledge about # of targets
     x_sort = sort(x_est, 'descend');
@@ -145,25 +149,20 @@ for Q_cell = Q_vec
     x_hat = x_est >= smallest_accepted_value;
     
     % sensors under attack
-    a_hat = a_est >= 1e-1;
-
-    % update actual position
-    x = A*x;
-    x = x > 0;      % convert to logical
+    a_hat = a_est >= 0.002;
 
     % plot targets positions
     str = sprintf("Iteration %d", k);
-    display_CPS(x_hat, x, p, 2, str);
+    display_CPS(x_hat, x_corr, p, 2, str);
      
     %print output
+    fprintf("\nDISTA - ");
+    disp(cell2mat(Q_names(Q_index)))
+    fprintf("Consensus reached in k=%i time steps, with %i total iterations\n", k, num_iter)
     fprintf("supp{x_hat}\n");
     disp(find(x_hat));
     fprintf("supp{a_hat}\n");
     disp(find(a_hat));
-
-    fprintf("\nConsensus reached in %i time, with %i iterations\n", k, num_iter)
-    fprintf("supp{x_hat}\n")
-    fprintf("supp{a_hat}\n")
 
 end
 
