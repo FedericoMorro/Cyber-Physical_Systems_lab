@@ -17,16 +17,17 @@ load("localization.mat")        % A, D, y
 lambda_1 = 10;
 lambda_2 = 20;
 epsilon = 1e-8;
+delta = 1e-12;
 
 % ista variables
 G = normalize([D eye(q)]);
 tau = norm(G,2)^(-2) - epsilon;
-tau_Lambda = tau * [lambda_1*ones(p,1); lambda_2*ones(q,1)];
+tau_lambda = tau * [lambda_1*ones(p,1); lambda_2*ones(q,1)];
 
 % ista
 tic;
 z0 = zeros(p+q, 1);
-[z, num_iter] = ista_lasso(z0, y, G, p, q, tau, tau_Lambda, false);
+[z, num_iter] = ista_lasso(z0, y, G, p, q, tau, tau_lambda, delta, false);
 t_elaps = toc;
 x = z(1:p);
 a = z(p+1:p+q);

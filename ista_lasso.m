@@ -1,7 +1,4 @@
-function [z, num_iter] = ista_lasso(z0, y, G, p, q, tau, tau_Lambda, one_iter)
-
-% parameters
-delta = 1e-12;
+function [z, num_iter] = ista_lasso(z0, y, G, p, q, tau, tau_lambda, delta, one_iter)
 
 % initialization
 num_iter = 0;
@@ -17,10 +14,10 @@ while ~exit_cond
 
     % shrinkage-thresholding step
     for i=1:p+q         % element-wise
-        if z_grad(i) > tau_Lambda(i)
-            z_next(i) = z_grad(i) - tau_Lambda(i);
-        elseif z_grad(i) < -tau_Lambda(i)
-            z_next(i) = z_grad(i) + tau_Lambda(i);
+        if z_grad(i) > tau_lambda(i)
+            z_next(i) = z_grad(i) - tau_lambda(i);
+        elseif z_grad(i) < -tau_lambda(i)
+            z_next(i) = z_grad(i) + tau_lambda(i);
         else
             z_next(i) = 0;
         end
@@ -31,7 +28,7 @@ while ~exit_cond
         exit_cond = true;
     end
 
-    % x update
+    % z update
     z = z_next;
 
     num_iter = num_iter + 1;

@@ -12,6 +12,7 @@ k = 2;
 
 % ista parameters
 epsilon = 1e-8;
+delta = 1e-12;
 
 % simulations parameters
 N_SIM = 20;
@@ -27,9 +28,9 @@ for i=1:N_SIM
     % ista
     tau = norm(C,2)^(-2) - epsilon;
     lambda = 1 / (100*tau);
-    tau_Lambda = tau*lambda * ones(p,1);
+    tau_lambda = tau*lambda * ones(p,1);
     z0 = zeros(p, 1);
-    [x, num_iter] = ista_lasso(z0, y, C, p, 0, tau, tau_Lambda, false);
+    [x, num_iter] = ista_lasso(z0, y, C, p, 0, tau, tau_lambda, delta, false);
     
     % update vars
     if nnz(x) == nnz(x_hat)

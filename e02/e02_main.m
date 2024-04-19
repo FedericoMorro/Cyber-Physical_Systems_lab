@@ -13,8 +13,9 @@ aware = false;
 
 % ista parameters
 epsilon = 1e-8;
-tau_lambda = 2e-3;
-tau_Lambda = tau_lambda * [zeros(n,1); ones(q,1)];
+tau_lambda_fact = 2e-3;
+tau_lambda = tau_lambda_fact * [zeros(n,1); ones(q,1)];
+delta = 1e-12;
 
 % simulations parameters
 N_SIM = 20;
@@ -31,7 +32,7 @@ for i=1:N_SIM
     tau = norm(C,2)^(-2) - epsilon;
     G = [C eye(q)];
     z0 = zeros(n+q, 1);
-    [z, num_iter] = ista_lasso(z0, y, G, n, q, tau, tau_Lambda, false);
+    [z, num_iter] = ista_lasso(z0, y, G, n, q, tau, tau_lambda, delta, false);
     
     % estimated vectors
     x = z(1:n);
