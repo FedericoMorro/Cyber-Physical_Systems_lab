@@ -19,6 +19,7 @@ tau = 4e-7;
 lambda = [10*ones(p,1); 0.1*ones(q,1)];
 tau_lambda = tau*lambda;
 delta = 1e-8;
+MAX_K = 2e5;
 
 
 %% Preliminary analysis
@@ -60,11 +61,13 @@ a_est = z_corr(p+1:p+q);
 x_sort = sort(x_est, 'descend');
 smallest_accepted_value = x_sort(trg);
 x_corr = x_est >= smallest_accepted_value;
+supp_x_corr = find(x_corr);
 
 % sensors under attack
 a_sort = sort(a_est, 'descend');
 smallest_accepted_value = a_sort(atk);
 a_corr = a_est >= smallest_accepted_value;
+supp_a_corr = find(a_corr);
 
 % plot targets positions
 str = sprintf("Correct positions");
@@ -74,9 +77,10 @@ display_CPS(x_corr, [], p, 2, str);
 fprintf("\nISTA\n");
 fprintf("# of iterations: %i\n", num_iter);
 fprintf("supp{x}\n");
-disp(find(x_corr)');
+disp(supp_x_corr');
 fprintf("supp{a}\n");
-disp(find(a_corr)');
+disp(supp_a_corr');
+fprintf("\n");
 
 
 
@@ -84,6 +88,10 @@ disp(find(a_corr)');
 % for each setup
 for Q_index = 1:length(Q_vec)
     % modification of ista_lasso.m
+
+    fprintf("\nDISTA - ");
+    disp(cell2mat(Q_names(Q_index)))
+    fprintf('Current time k: %8i', 0);
 
     % get current Q
     Q = cell2mat(Q_vec(Q_index));
@@ -136,33 +144,49 @@ for Q_index = 1:length(Q_vec)
         % variables update
         z = z_next;
         k = k + 1;
+
+        if rem(k,10000) == 0
+            fprintf('\b\b\b\b\b\b\b\b%8i', k);
+        end
+        if k >= MAX_K
+            exit_cond = true;
+        end
     end
 
 
     % get estimated vectors for each sensor
-    x_est = z(1:p);        % x_hat(k+1) = A * x_hat^+(k)
-    a_est = z(p+1:p+q);        % a_hat(k+1) = a_hat^+(k)
-
-    % exploit knowledge about # of targets
-    x_sort = sort(x_est, 'descend');
-    smallest_accepted_value = x_sort(trg);
-    x_hat = x_est >= smallest_accepted_value;
+    n_corr_x = 0;
+    n_corr_a = 0;
+    for i = 1:q
+        x_est = z(1:p, i);
+        a_est = z(p+1:p+q, i);
     
-    % sensors under attack
-    a_hat = a_est >= 0.002;
+        % exploit knowledge about # of targets
+        x_sort = sort(x_est, 'descend');
+        smallest_accepted_value = x_sort(trg);
+        x_hat = x_est >= smallest_accepted_value;
+        supp_x = find(x_hat);
+        
+        % sensors under attack
+        a_hat = a_est >= 0.002;
+        supp_a = find(a_hat);
 
-    % plot targets positions
-    str = sprintf("Iteration %d", k);
-    display_CPS(x_hat, x_corr, p, 2, str);
+        % count sensors that have correct estimations
+        if isequal(supp_x(1:length(supp_x_corr)), supp_x_corr)
+            n_corr_x = n_corr_x + 1;
+        end
+        if isequal(supp_a(1:length(supp_a_corr)), supp_a_corr)
+            n_corr_a = n_corr_a + 1;
+        end
+    
+        % plot targets positions
+        %display_CPS(x_hat, x_corr, p, 2, str);
+    end
      
-    %print output
-    fprintf("\nDISTA - ");
-    disp(cell2mat(Q_names(Q_index)))
-    fprintf("Consensus reached in k=%i time steps, with %i total iterations\n", k, num_iter)
-    fprintf("supp{x_hat}\n");
-    disp(find(x_hat));
-    fprintf("supp{a_hat}\n");
-    disp(find(a_hat));
-
+    % print output
+    fprintf("\nConsensus reached in k=%i time steps, with %i total iterations, delta=%.9f\n", ...
+        k, num_iter, sum)
+    fprintf("Number of sensor with correct supports: %i/%i for x, %i/%i for a\n", ...
+        n_corr_x, q, n_corr_a, q)
 end
 
