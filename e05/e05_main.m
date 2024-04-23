@@ -135,7 +135,7 @@ for Q_index = 1:length(Q_vec)
         % check if reached exit condition
         sum = 0;
         for i = 1:q
-            sum = sum + norm(z_next(:,i) - z(:,i));
+            sum = sum + norm(z_next(:,i) - z(:,i), 2)^2;
         end
         if sum < delta 
             exit_cond = true;
@@ -145,7 +145,7 @@ for Q_index = 1:length(Q_vec)
         z = z_next;
         k = k + 1;
 
-        if rem(k,10000) == 0
+        if rem(k,100) == 0
             fprintf('\b\b\b\b\b\b\b\b%8i', k);
         end
         if k >= MAX_K
@@ -184,7 +184,7 @@ for Q_index = 1:length(Q_vec)
     end
      
     % print output
-    fprintf("\nConsensus reached in k=%i time steps, with %i total iterations, delta=%.9f\n", ...
+    fprintf("\nConsensus reached in k=%i time steps, with %i total iterations, delta=%.8f\n", ...
         k, num_iter, sum)
     fprintf("Number of sensor with correct supports: %i/%i for x, %i/%i for a\n", ...
         n_corr_x, q, n_corr_a, q)
