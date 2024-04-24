@@ -55,11 +55,11 @@ x_sort = sort(x, 'descend');
 smallest_accepted_value = x_sort(trg);
 x_hat = x >= smallest_accepted_value;
 
-% plot targets positions
-display_CPS(x_hat, [], p, 2, "ISTA: targets positions");
-
 % sensors under attack
 a_hat = a >= 1e-3;
+
+% plot targets positions
+display_CPS(x_hat, [], D, a_hat, [], p, q, 2, "ISTA");
 
 % print output
 fprintf("ISTA\n\tTime: %f s\tIterations number: %i\n", t_elaps, num_iter);
@@ -100,7 +100,7 @@ end
 x_hat_knn = x_hat_knn > 0;      % convert to logical array
 
 % plot targets positions
-display_CPS(x_hat_knn, [], p, 3, "k-NN: targets positions");
+display_CPS(x_hat_knn, [], D, [], [], p, q, 3, "k-NN");
 
 % print output
 fprintf("\n\nk-NN\n\tTime: %f s\tIterations number: %i\n", t_elaps_knn, num_iter_knn);

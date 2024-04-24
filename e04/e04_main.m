@@ -7,6 +7,7 @@ format compact
 
 % parameters
 trg = 3;    % # of targets
+atk = 2;    % # of attacks
 p = 100;    % # of cells
 q = 25;     % # of sensors
 load("tracking_moving_targets.mat")        % A, D, Y
@@ -34,7 +35,9 @@ x_sort = sort(x, 'descend');
 smallest_accepted_value = x_sort(trg);
 x = x >= smallest_accepted_value;
 
-a = a >= 1e-1;
+a_sort = sort(a, 'descend');
+smallest_accepted_value = a_sort(atk);
+a = a >= smallest_accepted_value;
 
 % dynamic sse ista
 z_hat = zeros(p+q,1);
@@ -53,7 +56,7 @@ for k=1:k_fin
     x_hat = x_est >= smallest_accepted_value;
     
     % sensors under attack
-    a_hat = a_est >= 1e-1;
+    a_hat = a_est >= 1;
 
     % update actual position
     x = A*x;
@@ -61,9 +64,9 @@ for k=1:k_fin
 
     % plot targets positions
     str = sprintf("Iteration %d", k);
-    display_CPS(x_hat, x, p, 2, str);
+    display_CPS(x_hat, x, D, a_hat, a, p, q, 2, str);
 
-    pause(0.2)
+    pause(0.5)
 end
 
 
@@ -134,7 +137,7 @@ for k=1:k_fin
     x_hat = x_est >= smallest_accepted_value;
     
     % sensors under attack
-    a_hat = a_est >= 1e-1;
+    a_hat = a_est >= 1;
 
     % update actual position
     x = A*x;
@@ -142,7 +145,7 @@ for k=1:k_fin
 
     % plot targets positions
     str = sprintf("Iteration %d", k);
-    display_CPS(x_hat, x, p, 3, str);
+    display_CPS(x_hat, x, D, a_hat, a, p, q, 3, str);
 
-    pause(0.2);
+    pause(0.5);
 end
