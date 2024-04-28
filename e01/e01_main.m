@@ -51,7 +51,7 @@ for j = 1:N_ROUTINE
         [x, num_iter] = ista_lasso(z0, y, C, p, 0, tau, tau_lambda, delta, false);
         
         % update vars
-        if nnz(x) == nnz(x_hat)
+        if nnz(x) == nnz(x_hat) && all(find(x_hat) == find(x))
             sup_rec_cnt = sup_rec_cnt + 1;
         end
         num_iter_array(i) = num_iter;
