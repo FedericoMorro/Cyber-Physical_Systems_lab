@@ -69,7 +69,9 @@ end
 
 %% Plots
 % plot targets
-figure(fig_n)
+f = figure(fig_n);
+f.Position([3 4]) = [600, 400];
+
 plot(room_grid(1,x_corr), room_grid(2,x_corr),'s','MarkerSize',10, ...
     'MarkerEdgeColor',1/255*[40 208 220], 'MarkerFaceColor',1/255*[40 208 220], ...
     'DisplayName','Targets')
