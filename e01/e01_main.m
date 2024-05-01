@@ -4,10 +4,21 @@ clc
 
 format compact
 
+% Set simulation mode, among:
+%   SimulationMode.routine_n        -> in function of routine #
+%   SimulationMode.variable_q       -> in function of increasing q value
+%   SimulationMode.variable_lambda  -> in function of variable lambda value
+%   SimulationMode.variable_tau     -> in function of variable tau value
+
+sim_mode = SimulationMode.routine_n;
 
 % random noisy measurement parameters
-%q_array = 10:2:29;  % [10 12 14 ... 28] --> 10 increasing values for q
-q = 10;
+if sim_mode == 'variable_q'
+    q_array = 10:2:29;  % [10 12 14 ... 28] --> 10 increasing values for q
+else
+    q = 10;             % fixed q value
+end
+
 p = 20;
 k = 2;
 
@@ -16,14 +27,19 @@ epsilon = 1e-8;
 delta = 1e-12;
 
 % simulations parameters
-N_ROUTINE = 15;         % # of simulation routines
+N_ROUTINE = 10;         % # of simulation routines
 N_SIM = 20;             % # of simulations in each routine
 
-%tau_array = linspace(0.005, 0.033, N_ROUTINE);     % to simulate with variable tau
+if sim_mode == 'variable_tau'
+    % to simulate with variable tau
+    tau_array = linspace(0.002, 0.032, N_ROUTINE);     
 
-tau = 0.015;                                        % to simulate with constant tau 
-lambda_array = ...                                  %  and variable lambda
-    linspace(1/(1000*tau), 1/(10*tau), N_ROUTINE);   %
+elseif sim_mode == 'variable_lambda'
+    % to simulate with constant tau and variable lambda
+    tau = 0.015;
+    lambda_array = ...
+        linspace(1/(1000*tau), 1/(10*tau), N_ROUTINE);
+end
 
 % final result variables
 sup_rec_cnt_array = zeros(1, N_ROUTINE);
@@ -35,17 +51,29 @@ for j = 1:N_ROUTINE
     % simulations variables
     sup_rec_cnt = 0;        % support recovery count
     num_iter_array = zeros(N_SIM, 1);
-    %q = q_array(j);         % increasing q value
+    
+    if sim_mode == 'variable_q'
+        q = q_array(j);         % increasing q value
+    end
 
     % perform simulations
     for i=1:N_SIM
         [y, C, x_hat, eta] = e01_rand_noisy_mes_gen(q, p, k);
-    
+        
         % ista
-        %tau = norm(C,2)^(-2) - epsilon;
-        %tau = tau_array(j);
-        %lambda = 1 / (100*tau);
-        lambda = lambda_array(j);
+        if sim_mode == 'variable_tau'
+            tau = tau_array(j);
+            lambda = 1 / (100*tau);     % constant tau_lambda
+        
+        elseif sim_mode == 'variable_lambda'
+            % tau defined before starting (constant)
+            lambda = lambda_array(j);
+        
+        else 
+            tau = norm(C,2)^(-2) - epsilon;
+            lambda = 1 / (100*tau);
+        end
+
         tau_lambda = tau*lambda * ones(p,1);
         z0 = zeros(p, 1);
         [x, num_iter] = ista_lasso(z0, y, C, p, 0, tau, tau_lambda, delta, false);
@@ -64,5 +92,6 @@ for j = 1:N_ROUTINE
     
 end
 
-% configure display and plot option according to the simulation
+%% display results according to chosen simulation mode
+
 e01_display_results;
