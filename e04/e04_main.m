@@ -40,6 +40,7 @@ smallest_accepted_value = a_sort(atk);
 a = a >= smallest_accepted_value;
 
 % dynamic sse ista
+first_convergence = false;
 z_hat = zeros(p+q,1);
 k_fin = size(Y,2);
 for k=1:k_fin
@@ -56,7 +57,7 @@ for k=1:k_fin
     x_hat = x_est >= smallest_accepted_value;
     
     % sensors under attack
-    a_hat = a_est >= 1;
+    a_hat = a_est >= 2;
 
     % update actual position
     x = A*x;
@@ -65,6 +66,12 @@ for k=1:k_fin
     % plot targets positions
     str = sprintf("Iteration %d", k);
     display_CPS(x_hat, x, D, a_hat, a, p, q, 2, str);
+
+    % pause if convergence achieved for first time
+    if ~first_convergence && isequal(x_hat, x)
+        pause
+        first_convergence = true;
+    end
 
     pause(0.5)
 end
@@ -137,7 +144,7 @@ for k=1:k_fin
     x_hat = x_est >= smallest_accepted_value;
     
     % sensors under attack
-    a_hat = a_est >= 1;
+    a_hat = a_est >= 2;
 
     % update actual position
     x = A*x;
