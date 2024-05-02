@@ -127,7 +127,7 @@ end
 
 % a_corr - atk_corr
 if ~isempty(a_corr)
-    str = sprintf('%s\n\n Estimated attacks: \n', str);
+    str = sprintf('%s\n\n Sensors under attack: \n', str);
     for i = 1:length(atk_corr)
         str = sprintf('%s%d ', str, atk_corr(i));
     end
@@ -135,7 +135,7 @@ end
 
 % a_hat - atk
 if ~isempty(a_hat)
-    str = sprintf('%s\n\n Sensors under attack: \n', str);
+    str = sprintf('%s\n\n Estimted attacks: \n', str);
     for i = 1:length(atk)
         str = sprintf('%s%d ', str, atk(i));
     end

@@ -5,6 +5,9 @@ clc
 format compact
 
 
+DISPLAY_MODE = false;
+
+
 % parameters
 trg = 3;    % # of targets
 atk = 2;    % # of attacks
@@ -34,13 +37,14 @@ a = z(p+1:p+q);
 x_sort = sort(x, 'descend');
 smallest_accepted_value = x_sort(trg);
 x = x >= smallest_accepted_value;
+pos_in = x;     % save for time-varying attacks init
 
 a_sort = sort(a, 'descend');
 smallest_accepted_value = a_sort(atk);
 a = a >= smallest_accepted_value;
 
 % dynamic sse ista
-first_convergence = false;
+first_conv = false;
 z_hat = zeros(p+q,1);
 k_fin = size(Y,2);
 for k=1:k_fin
@@ -68,12 +72,14 @@ for k=1:k_fin
     display_CPS(x_hat, x, D, a_hat, a, p, q, 2, str);
 
     % pause if convergence achieved for first time
-    if ~first_convergence && isequal(x_hat, x)
+    if ~first_conv && isequal(x_hat, x)
         pause
-        first_convergence = true;
+        first_conv = true;
     end
 
-    pause(0.5)
+    if DISPLAY_MODE
+        pause(0.5);
+    end
 end
 
 
@@ -82,7 +88,6 @@ end
 %% Time-varying attacks
 % create new measurements from scratch
 x_tv = zeros(p, 1);         % actual positions
-pos_in = [13, 40, 84];   
 for j = pos_in
     x_tv(j) = 1;
 end
@@ -91,7 +96,7 @@ Y_tv = zeros(q, k_fin);     % measurements
 
 n_atks = 4;
 atk_sensors = randperm(q, n_atks);     % sensors under attack
-n0 = 2;                     % initial number of attacked sensors
+n0 = n_atks/2;              % initial number of attacked sensors
 k_switch = 24;              % time after which the second attack starts
 
 for i = 1:k_fin
@@ -99,8 +104,10 @@ for i = 1:k_fin
     Yi = D*x_tv;
     
     % apply the attacks
-    for j = atk_sensors(1:n0)
-        Yi(j) = Yi(j)*1.5;
+    if i <= k_switch
+        for j = atk_sensors(1:n0)
+            Yi(j) = Yi(j)*1.5;
+        end
     end
 
     if i > k_switch         % second wave of attacks
@@ -115,17 +122,11 @@ for i = 1:k_fin
 end
 
 % repeat the algorithm
-% compute initial state to compare with estimations
-z0 = zeros(p+q,1);
-[z, num_iter] = ista_lasso(z0, Y_tv(:,1), G, p, q, tau, tau_lambda, delta, false);
-x = z(1:p);
-a = z(p+1:p+q);
-
-x_sort = sort(x, 'descend');
-smallest_accepted_value = x_sort(trg);
-x = x >= smallest_accepted_value;
-
-a = a >= 1e-1;
+% initial conditions
+x = pos_in;
+a = atk_sensors(1:n0);
+first_conv = 0;
+diverge = 0;
 
 % dynamic sse ista
 z_hat = zeros(p+q,1);
@@ -150,9 +151,25 @@ for k=1:k_fin
     x = A*x;
     x = x > 0;      % convert to logical
 
+    % update attacks
+    if k > k_switch
+        a = atk_sensors(n0+1:n_atks);
+    end
+
     % plot targets positions
     str = sprintf("Iteration %d", k);
     display_CPS(x_hat, x, D, a_hat, a, p, q, 3, str);
+    
+    % pause if convergence achieved
+    if ~first_conv && isequal(x_hat, x)
+        pause
+        first_conv = k;
+    end
+    if first_conv && ~diverge && isequal(x_hat, x)
+        diverge = k;
+    end
 
-    pause(0.5);
+    if DISPLAY_MODE
+        pause(0.5);
+    end
 end

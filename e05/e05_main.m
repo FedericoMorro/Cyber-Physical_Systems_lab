@@ -85,6 +85,11 @@ fprintf("\n\n");
 
 
 %% DISTA
+
+num_iter = zeros(length(Q_vec),1);
+num_iter_convergence = zeros(length(Q_vec),1);
+k_stop = zeros(length(Q_vec),1);
+
 % for each setup
 for Q_index = 1:length(Q_vec)
     % modification of ista_lasso.m
@@ -98,8 +103,6 @@ for Q_index = 1:length(Q_vec)
 
     % initialization
     k = 1;
-    num_iter = 0;
-    num_iter_convergence = 0;
     z = zeros(p+q, q);      % z collects each z^(i) in R^(p+q), for each sensor
     z_next = zeros(p+q, q);     % tmp variable for z_{k+1}
     
@@ -130,7 +133,7 @@ for Q_index = 1:length(Q_vec)
                 end
             end
 
-            num_iter = num_iter + 1;
+            num_iter(Q_index) = num_iter(Q_index) + 1;
         end
         
         % check if reached exit condition
@@ -170,8 +173,8 @@ for Q_index = 1:length(Q_vec)
             end
         end
 
-        if num_iter_convergence == 0 && n_corr_x == q && n_corr_a == q
-            num_iter_convergence = k;
+        if num_iter_convergence(Q_index) == 0 && n_corr_x == q && n_corr_a == q
+            num_iter_convergence(Q_index) = k;
         end
 
         % print
@@ -183,10 +186,12 @@ for Q_index = 1:length(Q_vec)
         z = z_next;
         k = k + 1;
     end
+
+    k_stop(Q_index) = k;
      
     % print output
     fprintf("\nConsensus reached in k=%i time steps, with %i total iterations, delta=%.8f\n", ...
         k, num_iter, sum)
-    fprintf("Convergence achieved in %i iterations\n\n", num_iter_convergence)
+    fprintf("Convergence achieved in %i iterations\n\n", num_iter_convergence(Q_index))
 end
 
