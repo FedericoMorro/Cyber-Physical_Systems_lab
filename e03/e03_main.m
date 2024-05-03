@@ -47,7 +47,7 @@ end
 % plot estimated targets positions
 f = figure(1);
 f.Position([3 4]) = [525, 400];
-colormap("default")
+colormap("jet")
 imagesc(pos)
 title("ISTA: rough targets positions")
 
