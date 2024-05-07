@@ -86,9 +86,15 @@ fprintf("\n\n");
 
 %% DISTA
 
+% iteration variables
 num_iter = zeros(length(Q_vec),1);
-num_iter_convergence = zeros(length(Q_vec),1);
 k_stop = zeros(length(Q_vec),1);
+x_norm_error = zeros(length(Q_vec), 20000);
+a_norm_error = zeros(length(Q_vec), 20000);
+x_k_conv = zeros(length(Q_vec), 1);
+a_k_conv = zeros(length(Q_vec), 1);
+x_k_cons = zeros(length(Q_vec), 1);
+a_k_cons = zeros(length(Q_vec), 1);
 
 % for each setup
 for Q_index = 1:length(Q_vec)
@@ -162,20 +168,15 @@ for Q_index = 1:length(Q_vec)
             % sensors under attack
             a_hat = a_est >= 0.002;
             supp_a = find(a_hat);
-    
-            % count sensors that have correct estimations
-            if isequal(supp_x(1:length(supp_x_corr)), supp_x_corr)
-                n_corr_x = n_corr_x + 1;
-            end
-            if length(supp_a) >= length(supp_a_corr) && ...
-                isequal(supp_a(1:length(supp_a_corr)), supp_a_corr)
-                n_corr_a = n_corr_a + 1;
-            end
-        end
 
-        if num_iter_convergence(Q_index) == 0 && n_corr_x == q && n_corr_a == q
-            num_iter_convergence(Q_index) = k;
+            % update vectors of errors
+            x_norm_error(Q_index, k) = x_norm_error(Q_index, k) + norm(x_hat - x_corr, 1);
+            a_norm_error(Q_index, k) = x_norm_error(Q_index, k) + norm(a_hat - a_corr, 1);
         end
+        
+        % perform average of error of each 
+        x_norm_error(Q_index, k) = x_norm_error(Q_index, k) / q;
+        a_norm_error(Q_index, k) = a_norm_error(Q_index, k) / q;
 
         % print
         if rem(k,100) == 0
@@ -187,11 +188,18 @@ for Q_index = 1:length(Q_vec)
         k = k + 1;
     end
 
+    % save k
     k_stop(Q_index) = k;
-     
+
+    % find convergence times
+    x_k_conv(Q_index) = find(x_norm_error(Q_index,:) == 0, 1, "first");
+    a_k_conv(Q_index) = find(a_norm_error(Q_index,:) == 0, 1, "first");
+
     % print output
-    fprintf("\nConsensus reached in k=%i time steps, with %i total iterations, delta=%.8f\n", ...
-        k, num_iter, sum)
-    fprintf("Convergence achieved in %i iterations\n\n", num_iter_convergence(Q_index))
+    fprintf("\nTeermination condition reached in k=%i time steps, with %i total iterations, delta=%.8f\n", ...
+        k, num_iter(Q_index), sum)
+    
+    fprintf("Convergence to exact solution achieved in: for x: %i iterations, for a: %i iterations\n\n", ...
+        x_k_conv(Q_index), a_k_conv(Q_index))
 end
 
