@@ -91,10 +91,10 @@ num_iter = zeros(length(Q_vec),1);
 k_stop = zeros(length(Q_vec),1);
 x_norm_error = zeros(length(Q_vec), 20000);
 a_norm_error = zeros(length(Q_vec), 20000);
-x_k_conv = zeros(length(Q_vec), 1);
-a_k_conv = zeros(length(Q_vec), 1);
-x_k_cons = zeros(length(Q_vec), 1);
-a_k_cons = zeros(length(Q_vec), 1);
+k_x_conv = zeros(length(Q_vec), 1);
+k_a_conv = zeros(length(Q_vec), 1);
+k_x_cons = zeros(length(Q_vec), 1);
+k_a_cons = zeros(length(Q_vec), 1);
 
 % for each setup
 for Q_index = 1:length(Q_vec)
@@ -151,55 +151,82 @@ for Q_index = 1:length(Q_vec)
             exit_cond = true;
         end
 
+        % variables update
+        z = z_next;
+        
         % check if convergence achieved
         %   by getting estimated vectors for each sensor
-        n_corr_x = 0;
-        n_corr_a = 0;
+        x_hat = z(1:p,:);
+        a_hat = z(p+1:p+q,:);
+
         for i = 1:q
-            x_est = z(1:p, i);
-            a_est = z(p+1:p+q, i);
         
             % exploit knowledge about # of targets
-            x_sort = sort(x_est, 'descend');
+            x_sort = sort(x_hat(:,i), 'descend');
             smallest_accepted_value = x_sort(trg);
-            x_hat = x_est >= smallest_accepted_value;
-            supp_x = find(x_hat);
+            x_hat(:,i) = x_hat(:,i) >= smallest_accepted_value;
+            supp_x = find(x_hat(:,i));
             
             % sensors under attack
-            a_hat = a_est >= 0.002;
-            supp_a = find(a_hat);
+            a_hat(:,i) = a_hat(:,i) >= 0.002;
+            supp_a = find(a_hat(:,i));
 
             % update vectors of errors
-            x_norm_error(Q_index, k) = x_norm_error(Q_index, k) + norm(x_hat - x_corr, 1);
-            a_norm_error(Q_index, k) = x_norm_error(Q_index, k) + norm(a_hat - a_corr, 1);
+            x_norm_error(Q_index, k) = x_norm_error(Q_index, k) + norm(x_hat(:,i) - x_corr, 1);
+            a_norm_error(Q_index, k) = x_norm_error(Q_index, k) + norm(a_hat(:,i) - a_corr, 1);
         end
         
         % perform average of error of each 
         x_norm_error(Q_index, k) = x_norm_error(Q_index, k) / q;
         a_norm_error(Q_index, k) = a_norm_error(Q_index, k) / q;
 
+        % check if consesus reached
+        cons_x = true;
+        for i = 2:q
+            if ~isequal(x_hat(:,1), x_hat(:,i))
+                cons_x = false;
+            end
+        end
+        if k > 1 && k_x_cons(Q_index) == 0 && cons_x
+            k_x_cons(Q_index) = k;
+        end
+
+        cons_a = true;
+        if isequal(a_hat(:,1), zeros(q,1))
+            cons_a = false;
+        end
+        for i = 2:q
+            if ~isequal(a_hat(:,1), a_hat(:,i))
+                cons_a = false;
+            end
+        end
+        if k > 1 && k_a_cons(Q_index) == 0 && cons_a
+            k_a_cons(Q_index) = k;
+        end
+
         % print
         if rem(k,100) == 0
             fprintf('\b\b\b\b\b\b\b\b%8i', k);
         end
-    
-        % variables update
-        z = z_next;
+
+        % update k
         k = k + 1;
+    
     end
 
     % save k
     k_stop(Q_index) = k;
 
     % find convergence times
-    x_k_conv(Q_index) = find(x_norm_error(Q_index,:) == 0, 1, "first");
-    a_k_conv(Q_index) = find(a_norm_error(Q_index,:) == 0, 1, "first");
+    k_x_conv(Q_index) = find(x_norm_error(Q_index,:) == 0, 1, "first");
+    k_a_conv(Q_index) = find(a_norm_error(Q_index,:) == 0, 1, "first");
 
     % print output
     fprintf("\nTeermination condition reached in k=%i time steps, with %i total iterations, delta=%.8f\n", ...
         k, num_iter(Q_index), sum)
-    
+    fprintf("Consensus reached in: for x: %i iterations, for a: %i iterations\n", ...
+        k_x_cons(Q_index), k_a_cons(Q_index))
     fprintf("Convergence to exact solution achieved in: for x: %i iterations, for a: %i iterations\n\n", ...
-        x_k_conv(Q_index), a_k_conv(Q_index))
+        k_x_conv(Q_index), k_a_conv(Q_index))
 end
 
