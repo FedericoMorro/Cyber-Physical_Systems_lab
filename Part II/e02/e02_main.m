@@ -13,6 +13,12 @@ N = size(u,1);
 Delta_eta = 5;
 par_bound = 30;
 
+% to force a dc-gain value, add another constraint
+ADD_DC_GAIN_CONSTR = 1;
+dc_gain = 118;
+
+
+%% Solve Set-Membership problem
 % iteration variables
 PUI = zeros(5,2);
 
@@ -45,8 +51,8 @@ for i = 1:p
             supports(7,3) = 1;
             supports(8,4) = 1;
             supports(9,5) = 1;
-
             ineqPolySys{k-n}.supports = supports;
+
             ineqPolySys{k-n}.coef = [
                 y_tilde(k)
                 -1
@@ -59,11 +65,35 @@ for i = 1:p
                 -u(k-2)
             ];
         end
+
+        if ADD_DC_GAIN_CONSTR
+            ineqPolySys{N-n+1}.typeCone = -1;
+            ineqPolySys{N-n+1}.dimVar = N+p;
+            ineqPolySys{N-n+1}.degree = 1;
+            ineqPolySys{N-n+1}.noTerms = 6;
+
+            supports = zeros(6, N+p);
+            supports(2,1) = 1;
+            supports(3,2) = 1;
+            supports(4,3) = 1;
+            supports(5,4) = 1;
+            supports(6,5) = 1;
+            ineqPolySys{N-n+1}.supports = supports;
+
+            ineqPolySys{N-n+1}.coef = [
+                dc_gain
+                dc_gain
+                dc_gain
+                -1
+                -1
+                -1
+            ];
+        end
         
         ubd = [par_bound*ones(1,p)   Delta_eta*ones(1,N)];
         lbd = -ubd;
         
-        param.relaxOrder = 2;
+        param.relaxOrder = 1;
         param.POPsolver = 'active-set';
         
         [param,SDPobjValue,POP,elapsedTime,SDPsolverInfo,SDPinfo] = ...
@@ -87,5 +117,10 @@ for i = 1:p
 end
 theta_c
 
-% to force dc-gain equal to 118, add another constraint
-dc_gain = 118;
+
+
+%% Results elaboration
+% define the transfer function
+G = tf(theta_c(3:5)', [1 theta_c(1:2)'], 1)
+step(G)
+dcgain(G)
