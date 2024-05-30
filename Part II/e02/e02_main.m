@@ -7,9 +7,11 @@ format compact
 load exp_data.mat
 
 % parameters
-p = 5;
+n = 2;      % system order
+p = 5;      % number of parameters
 N = size(u,1);
 Delta_eta = 5;
+par_bound = 30;
 
 % iteration variables
 PUI = zeros(5,2);
@@ -21,18 +23,18 @@ for i = 1:p
     for j = 1:2
         
         objPoly.typeCone = 1;
-        objPoly.dimVar = N+p;
+        objPoly.dimVar = N+p;   % var = [th(1) ... th(p) eta(1) ... eta(N)]
         objPoly.degree = 1;
         objPoly.noTerms = 1;
         objPoly.supports = zeros(1,N+p);
         objPoly.supports(i) = 1;
         if j == 1, objPoly.coef = 1; else, objPoly.coef = -1; end
         
-        for k = 3:N
-            ineqPolySys{k-2}.typeCone = -1;
-            ineqPolySys{k-2}.dimVar = N+p;
-            ineqPolySys{k-2}.degree = 2;
-            ineqPolySys{k-2}.noTerms = 9;
+        for k = n+1:N
+            ineqPolySys{k-n}.typeCone = -1;
+            ineqPolySys{k-n}.dimVar = N+p;
+            ineqPolySys{k-n}.degree = 2;
+            ineqPolySys{k-n}.noTerms = 9;
             
             supports = zeros(9,N+p);
             supports(2,p+k) = 1;
@@ -44,8 +46,8 @@ for i = 1:p
             supports(8,4) = 1;
             supports(9,5) = 1;
 
-            ineqPolySys{k-2}.supports = supports;
-            ineqPolySys{k-2}.coef = [
+            ineqPolySys{k-n}.supports = supports;
+            ineqPolySys{k-n}.coef = [
                 y_tilde(k)
                 -1
                 y_tilde(k-1)
@@ -58,7 +60,7 @@ for i = 1:p
             ];
         end
         
-        ubd = [1e10*ones(1,p)   Delta_eta*ones(1,N)];
+        ubd = [par_bound*ones(1,p)   Delta_eta*ones(1,N)];
         lbd = -ubd;
         
         param.relaxOrder = 2;
@@ -66,7 +68,12 @@ for i = 1:p
         
         [param,SDPobjValue,POP,elapsedTime,SDPsolverInfo,SDPinfo] = ...
             sparsePOP(objPoly,ineqPolySys,lbd,ubd,param);
-        PUI(i,j) = POP.objValueL;
+
+        if j == 1
+            PUI(i,j) = POP.objValueL;
+        else
+            PUI(i,j) = - POP.objValueL;
+        end
         %POP.xVectL
 
     end
