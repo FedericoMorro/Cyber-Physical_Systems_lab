@@ -59,7 +59,7 @@ xi_0 = zeros(4,1);
 %   x' = (A - B*K)*x + B*N*r
 
 % define static-state feedback loop gain
-K_contr = place(A,B, [-1 -2 -3 -4]);
+K_contr = place(A,B, 0.5*[-1 -2 -3 -4]);
 A_contr = A - B*K_contr;
 
 % define static-state feedback reference gain
