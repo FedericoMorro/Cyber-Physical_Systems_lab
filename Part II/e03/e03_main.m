@@ -59,25 +59,18 @@ xi_0 = zeros(4,1);
 %   x' = (A - B*K)*x + B*N*r
 
 % define static-state feedback loop gain
-K_contr = place(A,B, 0.5*[-1 -2 -3 -4]);
+K_contr = place(A,B, 0.5*[0 -1 -2 -3]);         % step
+%K_contr = acker(A,B, 0.5*[0 0 -1 -2]);          % ramp
+%K_contr = place(A,B, 0.5*[0+1i 0-1i -1 -2]);    % sinusoidal
 A_contr = A - B*K_contr;
-
-% define static-state feedback reference gain
-dc = dcgain(ss(A_contr,B,C,D));
-for k = 1:length(dc)
-    if dc(k) == 0; N_contr(k) = 1; else N_contr(k) = 1/dc(k); end
-end
-B_contr = B.*N_contr';
-
-% reference signal
-ref_const = [1 0 0 0];
 
 % subsitute A and B with controller versions
 %   save olds for leader that has explicit feedback loop
 A0 = A;
-B0 = B;
 A = A_contr;
-B = B_contr;
+
+% impulse response (modal analysis)
+impulse(ss(A,B,C,D)), grid on
 
 
 
@@ -102,7 +95,7 @@ c = 2*c_min;
 
 %% Simulation
 t_sim = 50;
-out = sim('multi_agent_SBVF.slx');
+out = sim('multi_agent_SVFB.slx');
 
 % plot results
 figure, plot(out.tout, out.x0), grid on
