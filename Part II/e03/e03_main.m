@@ -47,11 +47,6 @@ Adj(6,5) = 3;
 g = zeros(6,1);
 g(1) = 1;
 
-% initial conditions
-x0_0 = [10 0 0 0];
-xi_0 = zeros(4,1);
-
-
 
 %% Leader controller
 % static state feedback
@@ -64,6 +59,17 @@ K_contr = place(A,B, 0.5*[0 -1 -2 -3]);         % step
 %K_contr = place(A,B, 0.5*[0+1i 0-1i -1 -2]);    % sinusoidal
 A_contr = A - B*K_contr;
 
+% reference signal gain for x1 (and x2)
+ref_gain = 5;
+
+s = tf('s');
+sys = minreal(zpk(inv(s*eye(4)-A_contr)));
+dc = dcgain(minreal(zpk(s*sys)));
+
+% initial conditions
+x0_0 = ref_gain/dc(1,1) * [1 0 0 0];
+xi_0 = zeros(4,1);
+
 % subsitute A and B with controller versions
 %   save olds for leader that has explicit feedback loop
 A0 = A;
@@ -71,8 +77,6 @@ A = A_contr;
 
 % impulse response (modal analysis)
 impulse(ss(A,B,C,D)), grid on
-
-
 
 %% Local controllers
 % solve ARE: A'P + PA + Q - PB inv(R) B'P = 0
@@ -90,8 +94,6 @@ G = diag(g);            % pinning matrix
 lambda = eig(L+G);       
 c_min = 1 / (2*min(real(lambda)));
 c = 2*c_min;
-
-
 
 %% Simulation
 t_sim = 50;
@@ -124,7 +126,7 @@ for foll_n = 1:6
     plot(out.tout, out.x0(:,1), 'b--')
     plot(out.tout, x_hist(3,:,foll_n), 'r')
     plot(out.tout, out.x0(:,3), 'r--')
-
+    legend('x1_i', 'x1_0', 'x2_i', 'x2_0')
     grid on
 end
 
