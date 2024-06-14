@@ -36,13 +36,9 @@ Adj(6,5) = 3;
 g = zeros(N,1);
 g(1) = 1;
 
-% initial conditions
-x0_0 = [10 0];
-xi_0 = zeros(n,1);
 
 
-
-%% Leader controller
+%% Leader Controller
 % static state feedback
 %   u = -K*x + N*r
 %   x' = (A - B*K)*x + B*N*r
@@ -53,9 +49,18 @@ K_contr = place(A,B, 0.5*[0 -1]);           % step
 %K_contr = place(A,B, 0.5*[0+1i 0-1i]);      % sinusoidal
 A_contr = A - B*K_contr;
 
-% subsitute A and B with controller versions
-%   save olds for leader that has explicit feedback loop
-A0 = A;
+% reference signal gain for x1 (and x2)
+ref_gain = 5;
+
+s = tf('s');
+sys = minreal(zpk(inv(s*eye(n)-A_contr)));
+ss_gain = dcgain(minreal(zpk(s*sys)));
+
+% initial conditions
+x0_0 = ref_gain/ss_gain(1,1) * [1 0];
+xi_0 = zeros(n,1);
+
+% subsitute A with controlled versions
 A = A_contr;
 
 % impulse response (modal analysis)
@@ -63,13 +68,13 @@ impulse(ss(A,B,C,D)), grid on
 
 
 
-%% Local controllers
+%% Local Controllers
 % solve ARE: A'P + PA + Q - PB inv(R) B'P = 0
 R = ones(m,m);
 Q = eye(n);
 P = are(A, B*inv(R)*B', Q);
 
-% compute K
+% compute gain K
 K = inv(R)*B'*P;
 
 % compute coupling gain c
@@ -79,6 +84,37 @@ G = diag(g);            % pinning matrix
 lambda = eig(L+G);       
 c_min = 1 / (2*min(real(lambda)));
 c = 2*c_min;
+
+
+
+%% Leader Observer
+% standard Luenberger observer
+L_obs = place(A',C', [-1 -2])';
+
+
+
+%% Local Observers
+% observer dynamics
+x_hat = sym('x_hat', [n,1], 'real');
+ct = sym('ct', [n,1], 'real');          % corrective term
+ui = sym('ui', 'real');
+
+xhd = A*x_hat + B*ui - ct;
+
+matlabFunction(xhd, 'File', 'coopObserver', 'Vars', {[x_hat;ui;ct]});
+% used in interpred matlab function in simulink
+
+% observer gain
+% solve ARE: A'P + PA + Q - PC' inv(R) CP = 0
+Ro = ones(m,m);
+Qo = eye(n);
+Po = are(A, C'*inv(Ro)*C, Qo);
+
+% compute gain F
+F = Po*C'*inv(Ro);
+
+% compute coupling gain co
+co = c;
 
 
 
