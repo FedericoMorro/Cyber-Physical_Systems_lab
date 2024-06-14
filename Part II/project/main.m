@@ -44,23 +44,26 @@ g(1) = 1;
 %   x' = (A - B*K)*x + B*N*r
 
 % define static-state feedback loop gain
-K_contr = place(A,B, 0.5*[0 -1]);           % step
+%K_contr = place(A,B, 0.5*[0 -1]);           % step
 %K_contr = acker(A,B, 0.5*[0 0]);            % ramp
-%K_contr = place(A,B, 0.5*[0+1i 0-1i]);      % sinusoidal
+K_contr = place(A,B, 0.5*[0+1i 0-1i]);      % sinusoidal
 A_contr = A - B*K_contr;
 
-% reference signal gain for x1 (and x2)
-ref_gain = 5;
+% reference signal gain for x1
+ss_ref = 2;
 
 s = tf('s');
 sys = minreal(zpk(inv(s*eye(n)-A_contr)));
 ss_gain = dcgain(minreal(zpk(s*sys)));
 
 % initial conditions
-x0_0 = ref_gain/ss_gain(1,1) * [1 0];
+if ss_gain(1,1) == 0; x0_0 = 1; else; x0_0 = ss_ref/ss_gain(1,1); end
+x0_0 = x0_0 * [1 0];
 xi_0 = zeros(n,1);
+x0_0 = [1 0];
 
 % subsitute A with controlled versions
+A0 = A;
 A = A_contr;
 
 % impulse response (modal analysis)
@@ -90,6 +93,7 @@ c = 2*c_min;
 %% Leader Observer
 % standard Luenberger observer
 L_obs = place(A',C', [-1 -2])';
+x0_0_obs = zeros(n,1);
 
 
 
@@ -102,7 +106,10 @@ ui = sym('ui', 'real');
 xhd = A*x_hat + B*ui - ct;
 
 matlabFunction(xhd, 'File', 'coopObserver', 'Vars', {[x_hat;ui;ct]});
-% used in interpred matlab function in simulink
+% used in interpred matlab function in simulink 
+
+% inital condition
+xi_0_obs = zeros(n,1);
 
 % observer gain
 % solve ARE: A'P + PA + Q - PC' inv(R) CP = 0
@@ -125,21 +132,14 @@ out = sim('coop_reg_SVFB.slx');
 
 
 %% Plot results
-figure, plot(out.tout, out.x0), grid on
+figure, plot(out.tout, out.x0_hat), grid on
 title('Leader S_0')
 legend('x','v')
 
 % reshape node states
 x_hist = zeros(n,length(out.tout),N);
-foll_n = 0;
-for k = 1:n*N
-    if rem(k,n) == 1, foll_n = foll_n + 1; end
-
-    if rem(k,n) == 0
-        x_hist(n,:,foll_n) = out.xi_all(k,:);
-    else
-        x_hist(rem(k,n),:,foll_n) = out.xi_all(k,:);
-    end
+for foll_n = 1:N
+    x_hist(:,:,foll_n) = out.xi_hat_all(:,(foll_n-1)*n+1:(foll_n)*n)';
 end
 
 % plot nodes behavior (only positions)
@@ -149,13 +149,13 @@ for foll_n = 1:N
 
     subplot(2,1,1)
     plot(out.tout, x_hist(1,:,foll_n)), hold on
-    plot(out.tout, out.x0(:,1), '--'), grid on
+    plot(out.tout, out.x0_hat(:,1), '--'), grid on
     str = sprintf('x_%i', foll_n); legend(str,'x_0')
     str = sprintf('S_%i - position', foll_n); title(str)
 
     subplot(2,1,2)
     plot(out.tout, x_hist(2,:,foll_n)), hold on
-    plot(out.tout, out.x0(:,2), '--'), grid on
+    plot(out.tout, out.x0_hat(:,2), '--'), grid on
     str = sprintf('v_%i', foll_n); legend(str,'v_0')
     str = sprintf('S_%i - velocity', foll_n); title(str)
 
@@ -165,8 +165,8 @@ end
 delta = zeros(n*N,length(out.tout));
 delta_MS = zeros(length(out.tout));
 for t = 1:length(out.tout)
-    x0_bar = [out.x0(t,:)'; out.x0(t,:)'; out.x0(t,:)'; out.x0(t,:)'; out.x0(t,:)'; out.x0(t,:)'];
-    delta(:,t) = out.xi_all(:,t) - x0_bar;
+    x0_bar = kron(ones(N,1), out.x0_hat(t,:)');
+    delta(:,t) = out.xi_hat_all(:,t)' - x0_bar;
     delta_MS(t) = 1/N * norm(delta(:,t))^2;
 end
 
