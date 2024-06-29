@@ -205,15 +205,6 @@ t_sim = 0:t_sample:t_sim;
 x0_sim = out.x0_hat;
 y0_sim = out.y0;
 
-% global disagreement error
-delta = zeros(n*N, length(out.x0_hat));
-delta_MS = zeros(length(out.x0_hat),1);
-for t = 1:length(out.x0_hat)
-    x0_bar = kron(ones(N,1), out.x0_hat(t,:)');
-    delta(:,t) = out.xi_hat_all(t,:)' - x0_bar;
-    delta_MS(t) = 1/N * norm(delta(:,t))^2;
-end
-
 
 
 %% Plot results
@@ -250,8 +241,3 @@ for foll_n = 1:N
     str = sprintf('S_%i - output', foll_n); title(str)
 
 end
-
-% global disagreement error
-figure
-plot(t_sim, delta_MS), grid on
-title('Mean Square of global disagreement error')

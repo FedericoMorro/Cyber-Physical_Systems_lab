@@ -12,59 +12,14 @@ silent = 2;
 % network parameters
 N = 6;
 
-Adj = zeros(N,N);
-g = zeros(N,1);
+[Adj, g] = network_config("", N, 0);
 
-
-% linear configuration
-% Adj(2,1) = 1;
-% Adj(3,2) = 1;
-% Adj(4,3) = 1;
-% Adj(5,4) = 1;
-% Adj(6,5) = 1;
-% g(1) = 1;
-
-% binary tree configuration
-% Adj(3,1) = 1;
-% Adj(5,1) = 1;
-% Adj(4,2) = 1;
-% Adj(6,2) = 1;
-% g(1) = 1;
-% g(2) = 1;
-
-% selected configuration
-Adj(1,3) = 1;
-Adj(2,6) = 1;
-Adj(3,1) = 3;
-Adj(3,4) = 1;
-Adj(4,1) = 3;
-Adj(4,5) = 1;
-Adj(5,2) = 3;
-Adj(5,4) = 1;
-Adj(6,5) = 2;
-g(1) = 5;
-g(2) = 5;
-
-aug_graph = [
-    zeros(1,N+1)
-    g       Adj
-];
-digr = digraph(aug_graph', {'0','1','2','3','4','5','6'});
-
-if 1
-    f = figure();
-    f.Position([3 4]) = [525, 400];
-    plot(digr, 'EdgeLabel', digr.Edges.Weight)
-    title('Communication Network Topology')
-end
-
-% desired eigenvalues
-A_des_eig = 0.5*[0 -1];         % constant
-%A_des_eig = [0 0];              % ramp          
-%A_des_eig = 2*[0+1i 0-1i];      % sinusoidal
+ref_type = "step";
+A_des_eig = reference_config(ref_type);
 
 % reference to be tracked
 x0_ref = [1 0];
+output_fact = 708.27;
 
 % noise
 noise_vec = zeros(N+1,1);
@@ -91,15 +46,6 @@ par.Qo = eye(n);
 
 
 %% Output elaboration
-% followers step response
-rise_set_time_agents = zeros(N,2);
-for i = 1:N
-    s = stepinfo(yi_sim{i}, t_sim, x0_ref(1)*708.27, 0, ...
-        'SettlingTimeThreshold', 0.02, 'RiseTimeLimits', [0.1 0.9]);
-    rise_set_time_agents(i,:) = [s.SettlingTime, s.RiseTime];
-end
-rise_set_time_agents
-mean(rise_set_time_agents)
 
 % rmse of response w.r.t. leader
 rms_agents = zeros(N,1);
@@ -117,29 +63,23 @@ end
 effort_agents
 mean(effort_agents)
 
+% global disagreement error
+delta = zeros(n*N, length(x0_sim));
+delta_MS = zeros(length(x0_sim),1);
+for t = 1:length(x0_sim)
+    x0_bar = kron(ones(N,1), x0_sim(t,:)');
+
+    xi_all = [];
+    for i = 1:N
+        xi_all = [xi_all; xi_sim{i}(:,t)];
+    end
+
+    delta(:,t) = xi_all - x0_bar;
+    delta_MS(t) = 1/N * norm(delta(:,t))^2;
+end
+
 % plots
-f = figure();
-f.Position([1 2 3 4]) = [0, 0, 525, 2*400];
-
-subplot(3,1,1), plot(1:N, rise_set_time_agents, 'o'), grid on
-xlim([0.5 N+0.5]), ylim([0 max(max(rise_set_time_agents))+0.5])
-legend('Settling time', 'Rise time')
-xlabel('Follower #'), ylabel('seconds')
-title('Followers Rise and Settling Time')
-
-subplot(3,1,2), plot(1:N, rms_agents, 'o'), grid on
-xlim([0.5 N+0.5]), ylim([0.95*min(rms_agents) 1.05*max(rms_agents)])
-legend('Output RMS')
-xlabel('Follower #'), ylabel('RMS')
-title('Followers Output RMS')
-
-subplot(3,1,3), plot(1:N, effort_agents, 'o'), grid on
-xlim([0.5 N+0.5]), ylim([0.95*min(effort_agents) 1.05*max(effort_agents)])
-legend('Command effort norm')
-xlabel('Follower #'), ylabel('norm')
-title('Followers Command effort')
-
-% step responses plot
+% output responses plot
 f = figure();
 f.Position([3 4]) = [525, 400];
 grid on, hold on
@@ -157,3 +97,58 @@ for i = 1:N
     plot(t_sim,ui_sim{i}, 'DisplayName',sprintf("S_%i", i))
 end
 title('Agents command inputs'), legend
+
+% global disagreement error
+figure
+plot(t_sim, delta_MS), grid on
+title('Mean Square of global disagreement error')
+
+
+%% Time analysis
+if ref_type == "step"
+    % followers step response
+    times_agents = zeros(N,2);
+    for i = 1:N
+        s = stepinfo(yi_sim{i}, t_sim, x0_ref(1)*output_fact, 0, ...
+            'SettlingTimeThreshold', 0.02, 'RiseTimeLimits', [0.1 0.9]);
+        times_agents(i,:) = [s.SettlingTime, s.RiseTime];
+    end
+else
+    % followers settling time
+    times_agents = zeros(N,1);
+    for i = 1:N
+        for t = flip(t_sim)
+            if abs(yi_sim{i}(t) - y0_sim(t)) > x0_ref(1)*output_fact*0.02
+                times_agents(i) = t;
+                break;
+            end
+        end
+    end
+end
+times_agents
+mean(times_agents)
+
+% plots
+f = figure();
+f.Position([1 2 3 4]) = [0, 0, 525, 2*400];
+
+subplot(3,1,1), plot(1:N, times_agents, 'o'), grid on
+xlim([0.5 N+0.5]), ylim([0 max(max(times_agents))+0.5])
+if ref_type == "step"
+    legend('Settling time', 'Rise time'), title('Followers Rise and Settling Time')
+else
+    legend('Settling time'), title('Followers Settling Time')
+end
+xlabel('Follower #'), ylabel('seconds')
+
+subplot(3,1,2), plot(1:N, rms_agents, 'o'), grid on
+xlim([0.5 N+0.5]), ylim([0.95*min(rms_agents) 1.05*max(rms_agents)])
+legend('Output RMS')
+xlabel('Follower #'), ylabel('RMS')
+title('Followers Output RMS')
+
+subplot(3,1,3), plot(1:N, effort_agents, 'o'), grid on
+xlim([0.5 N+0.5]), ylim([0.95*min(effort_agents) 1.05*max(effort_agents)])
+legend('Command effort norm')
+xlabel('Follower #'), ylabel('norm')
+title('Followers Command effort')
