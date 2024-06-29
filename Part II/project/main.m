@@ -17,30 +17,20 @@ Adj = zeros(N,N);
 g = zeros(N,1);
 
 % binary tree configuration
-% Adj(3,1) = 2;
-% Adj(5,1) = 2;
-% Adj(4,2) = 2;
-% Adj(6,2) = 2;
-% g(1) = 2;
-% g(2) = 2;
-
-% loop configuration
-% Adj(3,1) = 2;
-% Adj(4,3) = 2;
-% Adj(2,4) = 2;
-% Adj(5,2) = 2;
-% Adj(6,5) = 2;
-% Adj(1,6) = 2;
-% g(1) = 20;
-% g(2) = 20;
+Adj(3,1) = 1;
+Adj(5,1) = 1;
+Adj(4,2) = 1;
+Adj(6,2) = 1;
+g(1) = 1;
+g(2) = 1;
 
 % linear configuration
-Adj(2,1) = 1;
-Adj(3,2) = 1;
-Adj(4,3) = 1;
-Adj(5,4) = 1;
-Adj(6,5) = 1;
-g(1) = 1;
+% Adj(2,1) = 1;
+% Adj(3,2) = 1;
+% Adj(4,3) = 1;
+% Adj(5,4) = 1;
+% Adj(6,5) = 1;
+% g(1) = 1;
 
 aug_graph = [
     zeros(1,N+1)
