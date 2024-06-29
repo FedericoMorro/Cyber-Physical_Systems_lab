@@ -1,5 +1,5 @@
 function [x0_sim, y0_sim, xi_sim, yi_sim, ui_sim, t_sim] = ...
-    coop_reg(Adj, g, A_des_eig, x0_ref, local_obs, noise_vec, silent)
+    coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, silent)
 % Cooperative regulation problem
 
 % Adj: network adjacency matrix
@@ -90,8 +90,8 @@ end
 
 %% Local Controllers
 % solve ARE: A'P + PA + Q - PB inv(R) B'P = 0
-R = ones(m,m);
-Q = eye(n);
+R = par.R;
+Q = par.Q;
 P = are(A, B*inv(R)*B', Q);
 
 % compute gain K
@@ -103,7 +103,7 @@ L = in_deg_diag - Adj;              % Laplacian matrix of graph
 G = diag(g);            % pinning matrix
 lambda = eig(L+G);       
 c_min = 1 / (2*min(real(lambda)));
-c = 2*c_min;
+c = par.c_fact * c_min;
 
 
 
@@ -144,15 +144,15 @@ xi_0_obs = zeros(n,1);
 
 % observer gain
 % solve ARE: AP + PA' + Q - PC' inv(R) CP = 0
-Ro = ones(m,m);
-Qo = eye(n);
+Ro = par.Ro;
+Qo = par.Qo;
 Po = are(A', C'*inv(Ro)*C, Qo);
 
 % compute gain F
 F = Po*C'*inv(Ro);
 
 % compute coupling gain co
-co = c;
+co = par.co_fact * c_min;
 
 % use or not local observer
 if local_obs

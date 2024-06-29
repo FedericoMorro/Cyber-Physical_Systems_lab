@@ -73,11 +73,20 @@ noise_vec = zeros(N+1,1);
 % local or global observers
 local_obs = false;
 
+% algorithm parameters
+n = 2; m = 1;
+par.c_fact = 2;
+par.co_fact = 2;
+par.R = eye(m);
+par.Q = eye(n);
+par.Ro = eye(m);
+par.Qo = eye(n);
+
 
 
 %% Simulation(s)
 [x0_sim, y0_sim, xi_sim, yi_sim, ui_sim, t_sim] = ...
-    coop_reg(Adj, g, A_des_eig, x0_ref, local_obs, noise_vec, silent);
+    coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, silent);
 
 
 
