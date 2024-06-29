@@ -41,8 +41,9 @@ for i = 1:N
 end
 
 % 0 if no noise, 1 if noise
-noise_mean = 0;     noise_var = 10;   noise_seed = randi(100);
-leader_noise = 0;
+noise_mean = 0;     noise_var = 100;   noise_seed = randi(1000);
+leader_noise = noise_vec(end);
+noise_vec = noise_vec(1:N);
 
 
 
@@ -135,7 +136,7 @@ ui = sym('ui', 'real');
 
 x_hat_d = A*x_hat + B*ui - ct;
 
-matlabFunction(x_hat_d, 'File', 'coopObserver', 'Vars', {[x_hat;ui;ct]});
+matlabFunction(x_hat_d, 'File', 'gen_coopObserver', 'Vars', {[x_hat;ui;ct]});
 % used in interpred matlab function in simulink 
 
 % inital condition
@@ -175,6 +176,7 @@ end
 
 
 %% Simulation
+t_sample = 1e-3;
 t_sim = 10;
 out = sim('coop_reg_SVFB.slx', 'SrcWorkspace', 'current');
 
@@ -199,14 +201,14 @@ yi_sim = {out.y1(1,:)' out.y2(1,:)' out.y3(1,:)' out.y4(1,:)' out.y5(1,:)' out.y
 ui_sim = {out.u1(1,:)' out.u2(1,:)' out.u3(1,:)' out.u4(1,:)' out.u5(1,:)' out.u6(1,:)'};
 
 % output values
-t_sim = out.tout;
+t_sim = 0:t_sample:t_sim;
 x0_sim = out.x0_hat;
 y0_sim = out.y0;
 
 % global disagreement error
-delta = zeros(n*N, length(out.tout));
-delta_MS = zeros(length(out.tout),1);
-for t = 1:length(out.tout)
+delta = zeros(n*N, length(out.x0_hat));
+delta_MS = zeros(length(out.x0_hat),1);
+for t = 1:length(out.x0_hat)
     x0_bar = kron(ones(N,1), out.x0_hat(t,:)');
     delta(:,t) = out.xi_hat_all(t,:)' - x0_bar;
     delta_MS(t) = 1/N * norm(delta(:,t))^2;
@@ -251,5 +253,5 @@ end
 
 % global disagreement error
 figure
-plot(out.tout, delta_MS), grid on
+plot(t_sim, delta_MS), grid on
 title('Mean Square of global disagreement error')

@@ -1,4 +1,4 @@
-clear
+clear all
 close all
 clc
 
@@ -8,7 +8,6 @@ format compact
 % silent: 0 plot and print, 1 print, 2 none
 silent = 2;
 
-
 %% Setup
 % network parameters
 N = 6;
@@ -16,13 +15,6 @@ N = 6;
 Adj = zeros(N,N);
 g = zeros(N,1);
 
-% binary tree configuration
-Adj(3,1) = 1;
-Adj(5,1) = 1;
-Adj(4,2) = 1;
-Adj(6,2) = 1;
-g(1) = 1;
-g(2) = 1;
 
 % linear configuration
 % Adj(2,1) = 1;
@@ -31,6 +23,27 @@ g(2) = 1;
 % Adj(5,4) = 1;
 % Adj(6,5) = 1;
 % g(1) = 1;
+
+% binary tree configuration
+% Adj(3,1) = 1;
+% Adj(5,1) = 1;
+% Adj(4,2) = 1;
+% Adj(6,2) = 1;
+% g(1) = 1;
+% g(2) = 1;
+
+% selected configuration
+Adj(1,3) = 1;
+Adj(2,6) = 1;
+Adj(3,1) = 3;
+Adj(3,4) = 1;
+Adj(4,1) = 3;
+Adj(4,5) = 1;
+Adj(5,2) = 3;
+Adj(5,4) = 1;
+Adj(6,5) = 2;
+g(1) = 5;
+g(2) = 5;
 
 aug_graph = [
     zeros(1,N+1)
@@ -54,7 +67,8 @@ A_des_eig = 0.5*[0 -1];         % constant
 x0_ref = [1 0];
 
 % noise
-noise_vec = zeros(N,1);
+noise_vec = zeros(N+1,1);
+%noise_vec(6) = 1;
 
 % local or global observers
 local_obs = false;
@@ -105,13 +119,13 @@ xlabel('Follower #'), ylabel('seconds')
 title('Followers Rise and Settling Time')
 
 subplot(3,1,2), plot(1:N, rms_agents, 'o'), grid on
-xlim([0.5 N+0.5])
+xlim([0.5 N+0.5]), ylim([0.95*min(rms_agents) 1.05*max(rms_agents)])
 legend('Output RMS')
 xlabel('Follower #'), ylabel('RMS')
 title('Followers Output RMS')
 
 subplot(3,1,3), plot(1:N, effort_agents, 'o'), grid on
-xlim([0.5 N+0.5])
+xlim([0.5 N+0.5]), ylim([0.95*min(effort_agents) 1.05*max(effort_agents)])
 legend('Command effort norm')
 xlabel('Follower #'), ylabel('norm')
 title('Followers Command effort')
