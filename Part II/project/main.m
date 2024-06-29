@@ -52,7 +52,7 @@ if 1
     f = figure();
     f.Position([3 4]) = [525, 400];
     plot(digr, 'EdgeLabel', digr.Edges.Weight)
-    title('Communication Network Topolody')
+    title('Communication Network Topology')
 end
 
 % desired eigenvalues
@@ -67,7 +67,7 @@ x0_ref = [1 0];
 noise_vec = zeros(N,1);
 
 % local or global observers
-local_obs = true;
+local_obs = false;
 
 
 
@@ -83,7 +83,7 @@ rise_set_time_agents = zeros(N,2);
 for i = 1:N
     s = stepinfo(yi_sim{i}, t_sim, x0_ref(1)*708.27, 0, ...
         'SettlingTimeThreshold', 0.02, 'RiseTimeLimits', [0.1 0.9]);
-    rise_set_time_agents(i,:) = [s.RiseTime, s.SettlingTime];
+    rise_set_time_agents(i,:) = [s.SettlingTime, s.RiseTime];
 end
 rise_set_time_agents
 mean(rise_set_time_agents)
@@ -110,7 +110,7 @@ f.Position([1 2 3 4]) = [0, 0, 525, 2*400];
 
 subplot(3,1,1), plot(1:N, rise_set_time_agents, 'o'), grid on
 xlim([0.5 N+0.5]), ylim([0 max(max(rise_set_time_agents))+0.5])
-legend('Rise time', 'Settling time')
+legend('Settling time', 'Rise time')
 xlabel('Follower #'), ylabel('seconds')
 title('Followers Rise and Settling Time')
 

@@ -204,8 +204,8 @@ x0_sim = out.x0_hat;
 y0_sim = out.y0;
 
 % global disagreement error
-delta = zeros(n*N,length(out.tout));
-delta_MS = zeros(length(out.tout));
+delta = zeros(n*N, length(out.tout));
+delta_MS = zeros(length(out.tout),1);
 for t = 1:length(out.tout)
     x0_bar = kron(ones(N,1), out.x0_hat(t,:)');
     delta(:,t) = out.xi_hat_all(t,:)' - x0_bar;
