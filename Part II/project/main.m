@@ -67,12 +67,12 @@ x0_ref = [1 0];
 noise_vec = zeros(N,1);
 
 % local or global observers
-local_obs = false;
+local_obs = true;
 
 
 
 %% Simulation(s)
-[x0_sim, y0_sim, xi_sim, yi_sim, t_sim] = ...
+[x0_sim, y0_sim, xi_sim, yi_sim, ui_sim, t_sim] = ...
     coop_reg(Adj, g, A_des_eig, x0_ref, local_obs, noise_vec, silent);
 
 
@@ -96,20 +96,35 @@ end
 rms_agents
 mean(rms_agents)
 
+% command inputs norm
+effort_agents = zeros(N,1);
+for i = 1:N
+    effort_agents(i) = norm(ui_sim{i});
+end
+effort_agents
+mean(effort_agents)
+
 % plots
-figure
-subplot(2,1,1), plot(1:N, rise_set_time_agents, 'o'), grid on
+f = figure();
+f.Position([1 2 3 4]) = [0, 0, 525, 2*400];
+
+subplot(3,1,1), plot(1:N, rise_set_time_agents, 'o'), grid on
 xlim([0.5 N+0.5]), ylim([0 max(max(rise_set_time_agents))+0.5])
 legend('Rise time', 'Settling time')
 xlabel('Follower #'), ylabel('seconds')
 title('Followers Rise and Settling Time')
 
-subplot(2,1,2), plot(1:N, rms_agents, 'o'), grid on
+subplot(3,1,2), plot(1:N, rms_agents, 'o'), grid on
 xlim([0.5 N+0.5])
 legend('Output RMS')
 xlabel('Follower #'), ylabel('RMS')
 title('Followers Output RMS')
 
+subplot(3,1,3), plot(1:N, effort_agents, 'o'), grid on
+xlim([0.5 N+0.5])
+legend('Command effort norm')
+xlabel('Follower #'), ylabel('norm')
+title('Followers Command effort')
 
 % step responses plot
 f = figure();
@@ -121,3 +136,11 @@ for i = 1:N
 end
 title('Agents step response'), legend
 
+% command inputs plot
+f = figure();
+f.Position([3 4]) = [525, 400];
+grid on, hold on
+for i = 1:N
+    plot(t_sim,ui_sim{i}, 'DisplayName',sprintf("S_%i", i))
+end
+title('Agents command inputs'), legend

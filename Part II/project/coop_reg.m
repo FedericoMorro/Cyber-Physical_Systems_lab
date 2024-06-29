@@ -1,4 +1,4 @@
-function [x0_sim, y0_sim, xi_sim, yi_sim, t_sim] = ...
+function [x0_sim, y0_sim, xi_sim, yi_sim, ui_sim, t_sim] = ...
     coop_reg(Adj, g, A_des_eig, x0_ref, local_obs, noise_vec, silent)
 % Cooperative regulation problem
 
@@ -194,6 +194,9 @@ for foll_n = 1:N
 end
 % collect node outputs
 yi_sim = {out.y1(1,:)' out.y2(1,:)' out.y3(1,:)' out.y4(1,:)' out.y5(1,:)' out.y6(1,:)'};
+
+% collect node command inputs
+ui_sim = {out.u1(1,:)' out.u2(1,:)' out.u3(1,:)' out.u4(1,:)' out.u5(1,:)' out.u6(1,:)'};
 
 % output values
 t_sim = out.tout;
