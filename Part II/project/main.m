@@ -78,8 +78,8 @@ co_fact = {length(refs)};
 for ref_n = 1:length(refs)
     co_fact{ref_n} = [];
 
-    for curr_c0 = co_fact_vec
-        par.c0_fact = curr_c0;
+    for curr_co = co_fact_vec
+        par.co_fact = curr_co;
         ref_type = refs{ref_n};
 
         metrics = CPS_sim(ref_type, par, false, silent);
