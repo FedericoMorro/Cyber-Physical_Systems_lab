@@ -1,34 +1,22 @@
-clear
+clear all
 close all
 clc
 
 format compact
 
-
-% silent: 0 plot and print, 1 print, 2 none
+% silent: 0 plot and print, 1 print and plot external, 2 print external
 %   -1 for (also) impulse response
 silent = 2;
 
-%% Setup
-% network parameters
-N = 6;
-
-[Adj, g] = network_config("", N, 0);
-
-% reference to be tracked
-ref_type = "step";
-[A_des_eig, x0_ref, t_fin] = reference_config(ref_type, 1, 0.5);
-output_fact = 708.27;
-
-% noise
-noise_vec = zeros(N+1,1);
+% reference type
+refs = {"step", "ramp", "sinusoidal"};
 
 % local or global observers
 local_obs = false;
 
 % algorithm parameters
 n = 2; m = 1;
-par.c_fact = 1;
+par.c_fact = 2;
 par.co_fact = 1;
 par.R = eye(m);
 par.Q = eye(n);
@@ -36,217 +24,132 @@ par.Ro = eye(m);
 par.Qo = eye(n);
 
 
-
-%% Simulation(s)
-[x0_sim, y0_sim, xi_sim, yi_sim, yt_sim, ui_sim, ei_sim, t_sim] = ...
-    coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, t_fin, silent);
+N_SIM = 2;
 
 
+%% c_fact, distributed observers
+c_fact_vec = linspace(1,10,N_SIM);
 
-%% Output elaboration
+c_fact_d = {length(refs)};
+for ref_n = 1:length(refs)
+    c_fact_d{ref_n} = [];
 
-sim_len = length(t_sim);
+    for curr_c = c_fact_vec
+        par.c_fact = curr_c;
+        ref_type = refs{ref_n};
 
-% rmse of response w.r.t. leader
-rms_output_agents = zeros(N,1);
-for i = 1:N
-    rms_output_agents(i) = rms(y0_sim - yi_sim{i});
-end
-rms_output_agents
-mean_rms_output_agents = mean(rms_output_agents);
+        metrics = CPS_sim(ref_type, par, false, silent);
 
-% command inputs norm
-effort_agents = zeros(N,1);
-for i = 1:N
-    effort_agents(i) = norm(ui_sim{i})^2;
-end
-effort_agents
-mean_effort_agents = mean(effort_agents);
-
-% global disagreement error
-delta = zeros(n*N, sim_len);
-delta_RMS = zeros(sim_len,1);
-for t_ind = 1:sim_len
-    x0_bar = kron(ones(N,1), x0_sim(t_ind,:)');
-
-    xi_all = [];
-    for i = 1:N
-        xi_all = [xi_all; xi_sim{i}(:,t_ind)];
-    end
-
-    delta(:,t_ind) = xi_all - x0_bar;
-    delta_RMS(t_ind) = rms(delta(:,t_ind));
-end
-mean_delta_RMS = mean(delta_RMS);
-
-% time of zero disagreement error
-t_ga = -1;
-for t_ind = sim_len:-1:1
-    if delta_RMS(t_ind) > 1e-2
-        t_ga = t_sim(t_ind);
-        break;
+        c_fact_d{ref_n} = [c_fact_d{ref_n} metrics];
     end
 end
-t_ga
 
-% average y_tilde
-yt_avg = zeros(sim_len,1);
-for i = 1:N
-    yt_avg = yt_avg + abs(yt_sim{i}(:));
-end
-yt_avg = yt_avg / N;
-mean_yt_avg = mean(yt_avg);
+par.c_fact = 2;
 
-% observer estimation error (average of states)
-avg_obs_err = {N};
-for i = 1:N
-    avg_obs_err{i} = zeros(sim_len,1);
-    for t_ind = 1:sim_len
-        avg_obs_err{i}(t_ind) = norm(ei_sim{i}(t_ind,:));
+
+
+%% Q R, distributed observers
+QR_vec = logspace(-2,2,N_SIM);
+
+QR_d = {length(refs)};
+for ref_n = 1:length(refs)
+    QR_d{ref_n} = [];
+
+    for curr_QR = QR_vec
+        par.Q = curr_QR * eye(n);
+        ref_type = refs{ref_n};
+
+        metrics = CPS_sim(ref_type, par, false, silent);
+
+        QR_d{ref_n} = [QR_d{ref_n} metrics];
     end
 end
-% average
-avg_avg_obs_err = zeros(sim_len, 1);
-for i = 1:N
-    avg_avg_obs_err = avg_avg_obs_err + avg_obs_err{i}(:);
-end
-avg_avg_obs_err = avg_avg_obs_err / N;
-mean_avg_avg_obs_err = mean(avg_avg_obs_err);
+
+par.Q = eye(n);
 
 
 
-%% Plots
-% output responses plot
-f = figure();
-f.Position([3 4]) = [525, 400];
-grid on, hold on
-plot(t_sim,y0_sim,'k--', 'LineWidth',1, 'DisplayName','S_0')
-for i = 1:N
-    plot(t_sim,yi_sim{i}, 'DisplayName',sprintf("S_%i", i))
-end
-title('Agents Output Response'), legend
-xlabel('Time [s]'), ylabel('y_i')
+%% co_fact, distributed observers
+co_fact_vec = logspace(0,6,N_SIM);
 
-% command inputs plot
-f = figure();
-f.Position([3 4]) = [525, 400];
-grid on, hold on
-for i = 1:N
-    plot(t_sim,ui_sim{i}, 'DisplayName',sprintf("S_%i", i))
-end
-title('Agents command inputs'), legend
-xlabel('Time [s]'), ylabel('u_i')
+co_fact = {length(refs)};
+for ref_n = 1:length(refs)
+    co_fact{ref_n} = [];
 
-% global disagreement error
-figure
-plot(t_sim, delta_RMS), grid on
-title('RMS of global disagreement error')
-xlabel('Time [s]'), ylabel('MS(x_{all} - x_{bar})')
+    for curr_c0 = co_fact_vec
+        par.c0_fact = curr_c0;
+        ref_type = refs{ref_n};
 
-% y_tilde and observer error
-figure
-subplot(2,1,1), hold on
-plot(t_sim,yt_avg, 'k--', 'LineWidth',1, 'DisplayName', 'Avg')
-for i = 1:N
-    plot(t_sim,yt_sim{i}, 'DisplayName',sprintf("S_%i", i))
-end
-title('Agents tracking error'), legend(), grid on
-xlabel('Time [s]'), ylabel('y_{tilde}')
+        metrics = CPS_sim(ref_type, par, false, silent);
 
-subplot(2,1,2), hold on
-plot(t_sim,avg_avg_obs_err, 'k--', 'LineWidth',1, 'DisplayName', 'Avg')
-for i = 1:N
-    plot(t_sim,avg_obs_err{i}, 'DisplayName',sprintf("S_%i", i))
-end
-title('Agents observer error'), legend(), grid on
-xlabel('Time [s]'), ylabel('avg(x - x_{hat})')
-
-
-
-%% Time analysis
-if ref_type == "step"
-    % followers step response
-    times_agents = zeros(N,2);
-    for i = 1:N
-        s = stepinfo(yi_sim{i}, t_sim, x0_ref(1)*output_fact, 0, ...
-            'SettlingTimeThreshold', 0.02, 'RiseTimeLimits', [0.1 0.9]);
-        times_agents(i,:) = [s.SettlingTime, s.RiseTime];
-    end
-else
-    % followers settling time
-    times_agents = zeros(N,1);
-    for i = 1:N
-        for t_ind = sim_len:-1:1
-            if abs(yi_sim{i}(t_ind) - y0_sim(t_ind)) > max(x0_ref)*output_fact*0.02
-                times_agents(i) = t_sim(t_ind);
-                break;
-            end
-        end
+        co_fact{ref_n} = [co_fact{ref_n} metrics];
     end
 end
-times_agents
-mean_times_agents = mean(times_agents);
 
-% plots
-f = figure();
-f.Position([1 2 3 4]) = [0, 0, 525, 2*400];
-
-subplot(3,1,1), plot(1:N, times_agents, 'o'), grid on
-xlim([0.5 N+0.5]), ylim([0 max(max(times_agents))+0.5])
-if ref_type == "step"
-    legend('Settling time', 'Rise time'), title('Followers Rise and Settling Time')
-else
-    legend('Settling time'), title('Followers Settling Time')
-end
-xlabel('Follower #'), ylabel('seconds')
-
-subplot(3,1,2), plot(1:N, rms_output_agents, 'o'), grid on
-xlim([0.5 N+0.5]), ylim([0.95*min(rms_output_agents) 1.05*max(rms_output_agents)])
-legend('Output RMS')
-xlabel('Follower #'), ylabel('RMS')
-title('Followers Output Error RMS')
-
-subplot(3,1,3), plot(1:N, effort_agents, 'o'), grid on
-xlim([0.5 N+0.5]), ylim([0.95*min(effort_agents) 1.05*max(effort_agents)])
-legend('Command effort energy')
-xlabel('Follower #'), ylabel('Energy ||u||^2')
-title('Followers Command Effort')
+par.co_fact = 1;
 
 
 
-%% Distance of agents
+%% Qo Ro, distributed observers
+QoRo_vec = logspace(-6,6,N_SIM);
 
-% farthest agent from others
-dist_vec = zeros(sim_len,1);
-for t_ind = 1:sim_len
-    dist_matr = zeros(N,N);
-    for i = 1:N
-        for j = 1:N
-            dist_matr(i,j) = norm(yi_sim{i}(t_ind) - yi_sim{j}(t_ind));
-        end
+QoRo = {length(refs)};
+for ref_n = 1:length(refs)
+    QoRo{ref_n} = [];
+
+    for curr_QoRo = QoRo_vec
+        par.Qo = curr_QoRo * eye(n);
+        ref_type = refs{ref_n};
+
+        metrics = CPS_sim(ref_type, par, false, silent);
+
+        QoRo{ref_n} = [QoRo{ref_n} metrics];
     end
-    dist_vec(t_ind) = norm(dist_matr, 1);
 end
-mean_dist_vec = mean(dist_vec);
 
-% plot
-figure
-plot(t_sim, dist_vec), grid on
-title('Maximum Distance of Agents Outputs')
-xlabel('Time [s]'), ylabel('dist')
+par.Qo = eye(n);
 
 
 
-%% Display simulation numerical results
+%% c_fact, local observers
 
-mean_delta_RMS
-mean_yt_avg
+c_fact_l = {length(refs)};
+for ref_n = 1:length(refs)
+    c_fact_l{ref_n} = [];
 
-disp('--------------------')
+    for curr_c = c_fact_vec
+        par.c_fact = curr_c;
+        ref_type = refs{ref_n};
 
-mean_rms_output_agents
-t_ga
-mean_effort_agents
-mean_times_agents
-mean_dist_vec
-mean_avg_avg_obs_err
+        metrics = CPS_sim(ref_type, par, true, silent);
+
+        c_fact_l{ref_n} = [c_fact_l{ref_n} metrics];
+    end
+end
+
+par.c_fact = 2;
+
+
+
+%% Q R, local observers
+
+QR_l = {length(refs)};
+for ref_n = 1:length(refs)
+    QR_l{ref_n} = [];
+
+    for curr_QR = QR_vec
+        par.Q = curr_QR * eye(n);
+        ref_type = refs{ref_n};
+
+        metrics = CPS_sim(ref_type, par, false, silent);
+
+        QR_l{ref_n} = [QR_l{ref_n} metrics];
+    end
+end
+
+par.Q = eye(n);
+
+
+
+%% Save
+save sim_res

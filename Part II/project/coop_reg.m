@@ -41,7 +41,7 @@ for i = 1:N
 end
 
 % 0 if no noise, 1 if noise
-noise_mean = 0;     noise_var = 10;     noise_freq = 1e-2;
+noise_mean = 50;     noise_var = 10;     noise_freq = 1e-2;
 leader_noise = noise_vec(end);
 noise_vec = noise_vec(1:N);
 
