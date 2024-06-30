@@ -23,12 +23,16 @@ par.Q = eye(n);
 par.Ro = eye(m);
 par.Qo = eye(n);
 
+% parameters vectors
+N_SIM = 10;
+c_fact_vec = linspace(1,10,N_SIM);
+QR_vec = logspace(-2,2,N_SIM);
+co_fact_vec = logspace(0,6,N_SIM);
+QoRo_vec = logspace(-6,6,N_SIM);
 
-N_SIM = 2;
 
 
 %% c_fact, distributed observers
-c_fact_vec = linspace(1,10,N_SIM);
 
 c_fact_d = {length(refs)};
 for ref_n = 1:length(refs)
@@ -49,7 +53,6 @@ par.c_fact = 2;
 
 
 %% Q R, distributed observers
-QR_vec = logspace(-2,2,N_SIM);
 
 QR_d = {length(refs)};
 for ref_n = 1:length(refs)
@@ -70,7 +73,6 @@ par.Q = eye(n);
 
 
 %% co_fact, distributed observers
-co_fact_vec = logspace(0,6,N_SIM);
 
 co_fact = {length(refs)};
 for ref_n = 1:length(refs)
@@ -91,7 +93,6 @@ par.co_fact = 1;
 
 
 %% Qo Ro, distributed observers
-QoRo_vec = logspace(-6,6,N_SIM);
 
 QoRo = {length(refs)};
 for ref_n = 1:length(refs)
