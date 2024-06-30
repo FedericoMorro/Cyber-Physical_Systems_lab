@@ -48,12 +48,12 @@ par.Qo = eye(n);
 sim_len = length(t_sim);
 
 % rmse of response w.r.t. leader
-rms_agents = zeros(N,1);
+rms_output_agents = zeros(N,1);
 for i = 1:N
-    rms_agents(i) = rms(y0_sim - yi_sim{i});
+    rms_output_agents(i) = rms(y0_sim - yi_sim{i});
 end
-rms_agents
-mean(rms_agents)
+rms_output_agents
+mean_rms_output_agents = mean(rms_output_agents);
 
 % command inputs norm
 effort_agents = zeros(N,1);
@@ -61,7 +61,7 @@ for i = 1:N
     effort_agents(i) = norm(ui_sim{i})^2;
 end
 effort_agents
-mean(effort_agents)
+mean_effort_agents = mean(effort_agents);
 
 % global disagreement error
 delta = zeros(n*N, sim_len);
@@ -77,7 +77,7 @@ for t_ind = 1:sim_len
     delta(:,t_ind) = xi_all - x0_bar;
     delta_RMS(t_ind) = rms(delta(:,t_ind));
 end
-mean(delta_RMS)
+mean_delta_RMS = mean(delta_RMS);
 
 % time of zero disagreement error
 t_ga = -1;
@@ -95,7 +95,7 @@ for i = 1:N
     yt_avg = yt_avg + abs(yt_sim{i}(:));
 end
 yt_avg = yt_avg / N;
-mean(yt_avg)
+mean_yt_avg = mean(yt_avg);
 
 % observer estimation error (average of states)
 avg_obs_err = {N};
@@ -111,7 +111,7 @@ for i = 1:N
     avg_avg_obs_err = avg_avg_obs_err + avg_obs_err{i}(:);
 end
 avg_avg_obs_err = avg_avg_obs_err / N;
-mean(avg_avg_obs_err)
+mean_avg_avg_obs_err = mean(avg_avg_obs_err);
 
 
 
@@ -124,7 +124,7 @@ plot(t_sim,y0_sim,'k--', 'LineWidth',1, 'DisplayName','S_0')
 for i = 1:N
     plot(t_sim,yi_sim{i}, 'DisplayName',sprintf("S_%i", i))
 end
-title('Agents output response'), legend
+title('Agents Output Response'), legend
 xlabel('Time [s]'), ylabel('y_i')
 
 % command inputs plot
@@ -185,7 +185,7 @@ else
     end
 end
 times_agents
-mean(times_agents)
+mean_times_agents = mean(times_agents);
 
 % plots
 f = figure();
@@ -200,8 +200,8 @@ else
 end
 xlabel('Follower #'), ylabel('seconds')
 
-subplot(3,1,2), plot(1:N, rms_agents, 'o'), grid on
-xlim([0.5 N+0.5]), ylim([0.95*min(rms_agents) 1.05*max(rms_agents)])
+subplot(3,1,2), plot(1:N, rms_output_agents, 'o'), grid on
+xlim([0.5 N+0.5]), ylim([0.95*min(rms_output_agents) 1.05*max(rms_output_agents)])
 legend('Output RMS')
 xlabel('Follower #'), ylabel('RMS')
 title('Followers Output Error RMS')
@@ -227,10 +227,26 @@ for t_ind = 1:sim_len
     end
     dist_vec(t_ind) = norm(dist_matr, 1);
 end
-mean(dist_vec)
+mean_dist_vec = mean(dist_vec);
 
 % plot
 figure
 plot(t_sim, dist_vec), grid on
 title('Maximum Distance of Agents Outputs')
 xlabel('Time [s]'), ylabel('dist')
+
+
+
+%% Display simulation numerical results
+
+mean_delta_RMS
+mean_yt_avg
+
+disp('--------------------')
+
+mean_rms_output_agents
+t_ga
+mean_effort_agents
+mean_times_agents
+mean_dist_vec
+mean_avg_avg_obs_err
