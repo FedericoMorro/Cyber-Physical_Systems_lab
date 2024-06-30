@@ -80,7 +80,7 @@ end
 % average y_tilde
 yt_avg = zeros(length(t_sim),1);
 for i = 1:N
-    yt_avg = yt_avg + yt_sim{i};
+    yt_avg = yt_avg + yt_sim{i}(:);
 end
 yt_avg = yt_avg / N;
 
