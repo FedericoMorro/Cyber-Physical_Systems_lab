@@ -14,6 +14,4 @@ elseif ref_type == "sinusoidal"
     t_fin = 20;
 end
 
-t_fin = 15;
-
 end

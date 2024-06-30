@@ -7,7 +7,7 @@ function [metrics] = CPS_sim(ref_type, par, local_obs, silent)
 N = 6;
 n = 2;
 
-[Adj, g] = network_config("", N, silent);
+[Adj, g] = network_config("", N, silent-1);
 
 % reference to be tracked
 [A_des_eig, x0_ref, t_fin] = reference_config(ref_type, 1, 0.5);
@@ -42,32 +42,6 @@ for i = 1:N
 end
 effort_agents
 mean_effort_agents = mean(effort_agents);
-
-% global disagreement error
-delta = zeros(n*N, sim_len);
-delta_RMS = zeros(sim_len,1);
-for t_ind = 1:sim_len
-    x0_bar = kron(ones(N,1), x0_sim(t_ind,:)');
-
-    xi_all = [];
-    for i = 1:N
-        xi_all = [xi_all; xi_sim{i}(:,t_ind)];
-    end
-
-    delta(:,t_ind) = xi_all - x0_bar;
-    delta_RMS(t_ind) = rms(delta(:,t_ind));
-end
-mean_delta_RMS = mean(delta_RMS);
-
-% time of zero disagreement error
-t_ga = -1;
-for t_ind = sim_len:-1:1
-    if delta_RMS(t_ind) > 1e-2
-        t_ga = t_sim(t_ind);
-        break;
-    end
-end
-t_ga
 
 % average y_tilde
 yt_avg = zeros(sim_len,1);
@@ -116,14 +90,8 @@ if silent < 2
     for i = 1:N
         plot(t_sim,ui_sim{i}, 'DisplayName',sprintf("S_%i", i))
     end
-    title('Agents command inputs'), legend
+    title('Agents Command Inputs'), legend
     xlabel('Time [s]'), ylabel('u_i')
-    
-    % global disagreement error
-    figure
-    plot(t_sim, delta_RMS), grid on
-    title('RMS of global disagreement error')
-    xlabel('Time [s]'), ylabel('MS(x_{all} - x_{bar})')
     
     % y_tilde and observer error
     figure
@@ -132,7 +100,7 @@ if silent < 2
     for i = 1:N
         plot(t_sim,yt_sim{i}, 'DisplayName',sprintf("S_%i", i))
     end
-    title('Agents tracking error'), legend(), grid on
+    title('Agents Tracking Error'), legend(), grid on
     xlabel('Time [s]'), ylabel('y_{tilde}')
     
     subplot(2,1,2), hold on
@@ -140,7 +108,7 @@ if silent < 2
     for i = 1:N
         plot(t_sim,avg_obs_err{i}, 'DisplayName',sprintf("S_%i", i))
     end
-    title('Agents observer error'), legend(), grid on
+    title('Agents Observer Error'), legend(), grid on
     xlabel('Time [s]'), ylabel('avg(x - x_{hat})')
 
 end
@@ -201,7 +169,33 @@ end
 
 
 
-%% Distance of agents
+%% Distance and Ouput RMS of agents
+
+% global disagreement error
+delta = zeros(n*N, sim_len);
+delta_RMS = zeros(sim_len,1);
+for t_ind = 1:sim_len
+    x0_bar = kron(ones(N,1), x0_sim(t_ind,:)');
+
+    xi_all = [];
+    for i = 1:N
+        xi_all = [xi_all; xi_sim{i}(:,t_ind)];
+    end
+
+    delta(:,t_ind) = xi_all - x0_bar;
+    delta_RMS(t_ind) = rms(delta(:,t_ind));
+end
+mean_delta_RMS = mean(delta_RMS);
+
+% time of zero disagreement error
+t_ga = -1;
+for t_ind = sim_len:-1:1
+    if delta_RMS(t_ind) > 1e-2
+        t_ga = t_sim(t_ind);
+        break;
+    end
+end
+t_ga
 
 % farthest agent from others
 dist_vec = zeros(sim_len,1);
@@ -218,11 +212,54 @@ mean_dist_vec = mean(dist_vec);
 
 % plot
 if silent < 2
+    % global disagreement error
     figure
+    subplot(2,1,1), plot(t_sim, delta_RMS), grid on
+    title('RMS of Global Disagreement Error')
+    xlabel('Time [s]'), ylabel('MS(x_{all} - x_{bar})')
+
+    subplot(2,1,2), plot(t_sim, dist_vec), grid on
+    title('Maximum Distance of Agents Outputs')
+    xlabel('Time [s]'), ylabel('dist')
+    
+end
+
+
+
+%% Summary Plot
+
+if silent < 2
+    f = figure();
+    f.Position([3 4]) = [1100, 800];
+
+    subplot(2,2,1)
+    hold on
+    plot(t_sim,y0_sim,'k--', 'LineWidth',1, 'DisplayName','S_0')
+    for i = 1:N
+        plot(t_sim,yi_sim{i}, 'DisplayName',sprintf("S_%i", i))
+    end
+    title('Agents Output Response'), legend, grid on
+    xlabel('Time [s]'), ylabel('y_i')
+
+    subplot(2,2,3)
+    hold on
+    for i = 1:N
+        plot(t_sim,ui_sim{i}, 'DisplayName',sprintf("S_%i", i))
+    end
+    title('Agents Command Inputs'), legend, grid on
+    xlabel('Time [s]'), ylabel('u_i')
+
+    subplot(2,2,2)
+    plot(t_sim, delta_RMS), grid on
+    title('RMS of Global Disagreement Error')
+    xlabel('Time [s]'), ylabel('MS(x_{all} - x_{bar})')
+
+    subplot(2,2,4)
     plot(t_sim, dist_vec), grid on
     title('Maximum Distance of Agents Outputs')
     xlabel('Time [s]'), ylabel('dist')
 end
+
 
 
 
