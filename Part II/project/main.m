@@ -142,7 +142,7 @@ for ref_n = 1:length(refs)
         par.Q = curr_QR * eye(n);
         ref_type = refs{ref_n};
 
-        metrics = CPS_sim(ref_type, par, false, silent);
+        metrics = CPS_sim(ref_type, par, true, silent);
 
         QR_l{ref_n} = [QR_l{ref_n} metrics];
     end
