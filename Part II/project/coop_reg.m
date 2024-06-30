@@ -156,12 +156,12 @@ co = par.co_fact * c_min;
 
 % use or not local observer
 if local_obs
-    F = L_obs / c;      % s.t. c*F = L_obs, standard Lueneberger
+    F = - L_obs / co;       % s.t. co*F = L_obs, standard Lueneberger
 end
 
 
 
-%% Global Obsever Stability
+%% Global Observer Stability
 eig_Ao = [];
 for i = 1:N
     if ~local_obs

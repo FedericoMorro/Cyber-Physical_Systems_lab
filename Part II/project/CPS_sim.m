@@ -148,7 +148,7 @@ end
 
 
 %% Time analysis
-if ref_type == "step"
+if 0 %ref_type == "step"
     % followers step response
     times_agents = zeros(N,2);
     for i = 1:N
