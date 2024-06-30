@@ -22,15 +22,14 @@ output_fact = 708.27;
 
 % noise
 noise_vec = zeros(N+1,1);
-%noise_vec(6) = 1;
 
 % local or global observers
 local_obs = false;
 
 % algorithm parameters
 n = 2; m = 1;
-par.c_fact = 2;
-par.co_fact = 2;
+par.c_fact = 1;
+par.co_fact = 1;
 par.R = eye(m);
 par.Q = eye(n);
 par.Ro = eye(m);
@@ -39,12 +38,14 @@ par.Qo = eye(n);
 
 
 %% Simulation(s)
-[x0_sim, y0_sim, xi_sim, yi_sim, yt_sim, ui_sim, t_sim] = ...
+[x0_sim, y0_sim, xi_sim, yi_sim, yt_sim, ui_sim, ei_sim, t_sim] = ...
     coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, t_fin, silent);
 
 
 
 %% Output elaboration
+
+sim_len = length(t_sim);
 
 % rmse of response w.r.t. leader
 rms_agents = zeros(N,1);
@@ -57,15 +58,15 @@ mean(rms_agents)
 % command inputs norm
 effort_agents = zeros(N,1);
 for i = 1:N
-    effort_agents(i) = norm(ui_sim{i});
+    effort_agents(i) = norm(ui_sim{i})^2;
 end
 effort_agents
 mean(effort_agents)
 
 % global disagreement error
-delta = zeros(n*N, length(x0_sim));
-delta_MS = zeros(length(x0_sim),1);
-for t = 1:length(x0_sim)
+delta = zeros(n*N, sim_len);
+delta_MS = zeros(sim_len,1);
+for t = 1:sim_len
     x0_bar = kron(ones(N,1), x0_sim(t,:)');
 
     xi_all = [];
@@ -76,15 +77,35 @@ for t = 1:length(x0_sim)
     delta(:,t) = xi_all - x0_bar;
     delta_MS(t) = 1/N * norm(delta(:,t))^2;
 end
+mean(delta_MS)
 
 % average y_tilde
-yt_avg = zeros(length(t_sim),1);
+yt_avg = zeros(sim_len,1);
 for i = 1:N
     yt_avg = yt_avg + yt_sim{i}(:);
 end
 yt_avg = yt_avg / N;
+mean(yt_avg)
 
-% plots
+% observer estimation error (average of states)
+avg_obs_err = {N};
+for i = 1:N
+    avg_obs_err{i} = zeros(sim_len,1);
+    for t_ind = 1:sim_len
+        avg_obs_err{i}(t_ind) = mean(abs(ei_sim{i}(t,:)));
+    end
+end
+% average
+avg_avg_obs_err = zeros(sim_len, 1);
+for i = 1:N
+    avg_avg_obs_err = avg_avg_obs_err + avg_obs_err{i}(:);
+end
+avg_avg_obs_err = avg_avg_obs_err / N;
+mean(avg_avg_obs_err)
+
+
+
+%% Plots
 % output responses plot
 f = figure();
 f.Position([3 4]) = [525, 400];
@@ -106,19 +127,29 @@ end
 title('Agents command inputs'), legend
 xlabel('Time [s]'), ylabel('u_i')
 
-% global disagreement error and y_tilde
+% global disagreement error
 figure
-subplot(2,1,1), plot(t_sim, delta_MS), grid on
+plot(t_sim, delta_MS), grid on
 title('Mean Square of global disagreement error')
 xlabel('Time [s]'), ylabel('MS(x_{all} - x_{bar})')
 
-subplot(2,1,2), hold on
+% y_tilde and observer error
+figure
+subplot(2,1,1), hold on
 plot(t_sim,yt_avg, 'k--', 'LineWidth',1, 'DisplayName', 'Avg')
 for i = 1:N
     plot(t_sim,yt_sim{i}, 'DisplayName',sprintf("S_%i", i))
 end
-title('Agents tracking error'), legend, grid on
+title('Agents tracking error'), legend(), grid on
 xlabel('Time [s]'), ylabel('y_{tilde}')
+
+subplot(2,1,2), hold on
+plot(t_sim,avg_avg_obs_err, 'k--', 'LineWidth',1, 'DisplayName', 'Avg')
+for i = 1:N
+    plot(t_sim,avg_obs_err{i}, 'DisplayName',sprintf("S_%i", i))
+end
+title('Agents observer error'), legend(), grid on
+xlabel('Time [s]'), ylabel('avg(x - x_{hat})')
 
 
 
@@ -135,7 +166,7 @@ else
     % followers settling time
     times_agents = zeros(N,1);
     for i = 1:N
-        for t_ind = length(t_sim):-1:1
+        for t_ind = sim_len:-1:1
             if abs(yi_sim{i}(t_ind) - y0_sim(t_ind)) > max(x0_ref)*output_fact*0.02
                 times_agents(i) = t_sim(t_ind);
                 break;
@@ -163,10 +194,10 @@ subplot(3,1,2), plot(1:N, rms_agents, 'o'), grid on
 xlim([0.5 N+0.5]), ylim([0.95*min(rms_agents) 1.05*max(rms_agents)])
 legend('Output RMS')
 xlabel('Follower #'), ylabel('RMS')
-title('Followers Output RMS')
+title('Followers Output Error RMS')
 
 subplot(3,1,3), plot(1:N, effort_agents, 'o'), grid on
 xlim([0.5 N+0.5]), ylim([0.95*min(effort_agents) 1.05*max(effort_agents)])
-legend('Command effort norm')
-xlabel('Follower #'), ylabel('norm')
-title('Followers Command effort')
+legend('Command effort energy')
+xlabel('Follower #'), ylabel('Energy ||u||^2')
+title('Followers Command Effort')

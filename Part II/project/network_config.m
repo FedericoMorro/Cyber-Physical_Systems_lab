@@ -25,15 +25,15 @@ else
     % selected configuration
     Adj(1,3) = 1;
     Adj(2,6) = 1;
-    Adj(3,1) = 3;
+    Adj(3,1) = 1;
     Adj(3,4) = 1;
-    Adj(4,1) = 3;
+    Adj(4,1) = 1;
     Adj(4,5) = 1;
-    Adj(5,2) = 3;
+    Adj(5,2) = 1;
     Adj(5,4) = 1;
-    Adj(6,5) = 2;
-    g(1) = 5;
-    g(2) = 5;
+    Adj(6,5) = 1;
+    g(1) = 1;
+    g(2) = 1;
 
 end
 

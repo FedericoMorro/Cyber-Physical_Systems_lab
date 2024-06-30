@@ -1,4 +1,4 @@
-function [x0_sim, y0_sim, xi_sim, yi_sim, yt_sim, ui_sim, t_sim] = ...
+function [x0_sim, y0_sim, xi_sim, yi_sim, yt_sim, ui_sim, ei_sim, t_sim] = ...
     coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, t_fin, silent)
 % Cooperative regulation problem
 
@@ -41,7 +41,7 @@ for i = 1:N
 end
 
 % 0 if no noise, 1 if noise
-noise_mean = 0;     noise_var = 100;   noise_seed = randi(1000);
+noise_mean = 0;     noise_var = 10;     noise_freq = 1e-2;
 leader_noise = noise_vec(end);
 noise_vec = noise_vec(1:N);
 
@@ -188,16 +188,22 @@ xi_sim = {N};
 for foll_n = 1:N
     xi_sim{foll_n} = out.xi_hat_all(:,(foll_n-1)*n+1:foll_n*n)';
 end
+
 % reshape node output errors
 yt_sim = {N};
 for foll_n = 1:N
     yt_sim{foll_n} = out.yi_tilde_all(:,(foll_n-1)*p+1:foll_n*p)';
 end
+
 % collect node outputs
 yi_sim = {out.y1(1,:)' out.y2(1,:)' out.y3(1,:)' out.y4(1,:)' out.y5(1,:)' out.y6(1,:)'};
 
 % collect node command inputs
 ui_sim = {out.u1(1,:)' out.u2(1,:)' out.u3(1,:)' out.u4(1,:)' out.u5(1,:)' out.u6(1,:)'};
+
+% collect node estimation errors
+ei_sim = {out.err1(:,:)', out.err2(:,:)', out.err3(:,:)', ...
+    out.err4(:,:)', out.err5(:,:)', out.err6(:,:)'};
 
 % output values
 t_sim = 0:t_sample:t_fin;
