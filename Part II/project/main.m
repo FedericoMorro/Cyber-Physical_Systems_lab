@@ -211,3 +211,26 @@ xlim([0.5 N+0.5]), ylim([0.95*min(effort_agents) 1.05*max(effort_agents)])
 legend('Command effort energy')
 xlabel('Follower #'), ylabel('Energy ||u||^2')
 title('Followers Command Effort')
+
+
+
+%% Distance of agents
+
+% farthest agent from others
+dist_vec = zeros(sim_len,1);
+for t_ind = 1:sim_len
+    dist_matr = zeros(N,N);
+    for i = 1:N
+        for j = 1:N
+            dist_matr(i,j) = norm(xi_sim{i}(:,t_ind) - xi_sim{j}(:,t_ind));
+        end
+    end
+    dist_vec(t_ind) = norm(dist_matr, 1);
+end
+mean(dist_vec)
+
+% plot
+figure
+plot(t_sim, dist_vec), grid on
+title('Maximum Distance of Agents')
+xlabel('Time [s]'), ylabel('dist')
