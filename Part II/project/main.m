@@ -222,7 +222,7 @@ for t_ind = 1:sim_len
     dist_matr = zeros(N,N);
     for i = 1:N
         for j = 1:N
-            dist_matr(i,j) = norm(xi_sim{i}(:,t_ind) - xi_sim{j}(:,t_ind));
+            dist_matr(i,j) = norm(yi_sim{i}(t_ind) - yi_sim{j}(t_ind));
         end
     end
     dist_vec(t_ind) = norm(dist_matr, 1);
@@ -232,5 +232,5 @@ mean(dist_vec)
 % plot
 figure
 plot(t_sim, dist_vec), grid on
-title('Maximum Distance of Agents')
+title('Maximum Distance of Agents Outputs')
 xlabel('Time [s]'), ylabel('dist')
