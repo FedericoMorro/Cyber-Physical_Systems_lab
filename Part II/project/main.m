@@ -65,24 +65,34 @@ mean(effort_agents)
 
 % global disagreement error
 delta = zeros(n*N, sim_len);
-delta_MS = zeros(sim_len,1);
-for t = 1:sim_len
-    x0_bar = kron(ones(N,1), x0_sim(t,:)');
+delta_RMS = zeros(sim_len,1);
+for t_ind = 1:sim_len
+    x0_bar = kron(ones(N,1), x0_sim(t_ind,:)');
 
     xi_all = [];
     for i = 1:N
-        xi_all = [xi_all; xi_sim{i}(:,t)];
+        xi_all = [xi_all; xi_sim{i}(:,t_ind)];
     end
 
-    delta(:,t) = xi_all - x0_bar;
-    delta_MS(t) = 1/N * norm(delta(:,t))^2;
+    delta(:,t_ind) = xi_all - x0_bar;
+    delta_RMS(t_ind) = rms(delta(:,t_ind));
 end
-mean(delta_MS)
+mean(delta_RMS)
+
+% time of zero disagreement error
+t_ga = -1;
+for t_ind = sim_len:-1:1
+    if delta_RMS(t_ind) > 1e-2
+        t_ga = t_sim(t_ind);
+        break;
+    end
+end
+t_ga
 
 % average y_tilde
 yt_avg = zeros(sim_len,1);
 for i = 1:N
-    yt_avg = yt_avg + yt_sim{i}(:);
+    yt_avg = yt_avg + abs(yt_sim{i}(:));
 end
 yt_avg = yt_avg / N;
 mean(yt_avg)
@@ -92,7 +102,7 @@ avg_obs_err = {N};
 for i = 1:N
     avg_obs_err{i} = zeros(sim_len,1);
     for t_ind = 1:sim_len
-        avg_obs_err{i}(t_ind) = mean(abs(ei_sim{i}(t,:)));
+        avg_obs_err{i}(t_ind) = norm(ei_sim{i}(t_ind,:));
     end
 end
 % average
@@ -129,8 +139,8 @@ xlabel('Time [s]'), ylabel('u_i')
 
 % global disagreement error
 figure
-plot(t_sim, delta_MS), grid on
-title('Mean Square of global disagreement error')
+plot(t_sim, delta_RMS), grid on
+title('RMS of global disagreement error')
 xlabel('Time [s]'), ylabel('MS(x_{all} - x_{bar})')
 
 % y_tilde and observer error
