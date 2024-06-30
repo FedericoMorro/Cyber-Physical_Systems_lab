@@ -1,5 +1,5 @@
-function [x0_sim, y0_sim, xi_sim, yi_sim, ui_sim, t_sim] = ...
-    coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, silent)
+function [x0_sim, y0_sim, xi_sim, yi_sim, yt_sim, ui_sim, t_sim] = ...
+    coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, t_fin, silent)
 % Cooperative regulation problem
 
 % Adj: network adjacency matrix
@@ -81,7 +81,7 @@ A0 = A;
 A = A_contr;
 
 % impulse response (modal analysis)
-if silent < 1
+if silent < 0
     figure
     impulse(ss(A,B,C,D)), grid on
 end
@@ -177,7 +177,6 @@ end
 
 %% Simulation
 t_sample = 1e-3;
-t_sim = 10;
 out = sim('coop_reg_SVFB.slx', 'SrcWorkspace', 'current');
 
 
@@ -190,9 +189,9 @@ for foll_n = 1:N
     xi_sim{foll_n} = out.xi_hat_all(:,(foll_n-1)*n+1:foll_n*n)';
 end
 % reshape node output errors
-y_tilde_hist = {N};
+yt_sim = {N};
 for foll_n = 1:N
-    y_tilde_hist{foll_n} = out.yi_tilde_all(:,(foll_n-1)*p+1:foll_n*p)';
+    yt_sim{foll_n} = out.yi_tilde_all(:,(foll_n-1)*p+1:foll_n*p)';
 end
 % collect node outputs
 yi_sim = {out.y1(1,:)' out.y2(1,:)' out.y3(1,:)' out.y4(1,:)' out.y5(1,:)' out.y6(1,:)'};
@@ -201,7 +200,7 @@ yi_sim = {out.y1(1,:)' out.y2(1,:)' out.y3(1,:)' out.y4(1,:)' out.y5(1,:)' out.y
 ui_sim = {out.u1(1,:)' out.u2(1,:)' out.u3(1,:)' out.u4(1,:)' out.u5(1,:)' out.u6(1,:)'};
 
 % output values
-t_sim = 0:t_sample:t_sim;
+t_sim = 0:t_sample:t_fin;
 x0_sim = out.x0_hat;
 y0_sim = out.y0;
 

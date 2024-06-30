@@ -1,4 +1,4 @@
-clear all
+clear
 close all
 clc
 
@@ -6,6 +6,7 @@ format compact
 
 
 % silent: 0 plot and print, 1 print, 2 none
+%   -1 for (also) impulse response
 silent = 2;
 
 %% Setup
@@ -14,11 +15,9 @@ N = 6;
 
 [Adj, g] = network_config("", N, 0);
 
-ref_type = "step";
-A_des_eig = reference_config(ref_type);
-
 % reference to be tracked
-x0_ref = [1 0];
+ref_type = "sinusoidal";
+[A_des_eig, x0_ref, t_fin] = reference_config(ref_type, 1, 0.5);
 output_fact = 708.27;
 
 % noise
@@ -40,8 +39,8 @@ par.Qo = eye(n);
 
 
 %% Simulation(s)
-[x0_sim, y0_sim, xi_sim, yi_sim, ui_sim, t_sim] = ...
-    coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, silent);
+[x0_sim, y0_sim, xi_sim, yi_sim, yt_sim, ui_sim, t_sim] = ...
+    coop_reg(Adj, g, A_des_eig, x0_ref, par, local_obs, noise_vec, t_fin, silent);
 
 
 
@@ -78,6 +77,13 @@ for t = 1:length(x0_sim)
     delta_MS(t) = 1/N * norm(delta(:,t))^2;
 end
 
+% average y_tilde
+yt_avg = zeros(length(t_sim),1);
+for i = 1:N
+    yt_avg = yt_avg + yt_sim{i};
+end
+yt_avg = yt_avg / N;
+
 % plots
 % output responses plot
 f = figure();
@@ -87,7 +93,8 @@ plot(t_sim,y0_sim,'k--', 'LineWidth',1, 'DisplayName','S_0')
 for i = 1:N
     plot(t_sim,yi_sim{i}, 'DisplayName',sprintf("S_%i", i))
 end
-title('Agents step response'), legend
+title('Agents output response'), legend
+xlabel('Time [s]'), ylabel('y_i')
 
 % command inputs plot
 f = figure();
@@ -97,11 +104,22 @@ for i = 1:N
     plot(t_sim,ui_sim{i}, 'DisplayName',sprintf("S_%i", i))
 end
 title('Agents command inputs'), legend
+xlabel('Time [s]'), ylabel('u_i')
 
-% global disagreement error
+% global disagreement error and y_tilde
 figure
-plot(t_sim, delta_MS), grid on
+subplot(2,1,1), plot(t_sim, delta_MS), grid on
 title('Mean Square of global disagreement error')
+xlabel('Time [s]'), ylabel('MS(x_{all} - x_{bar})')
+
+subplot(2,1,2), hold on
+plot(t_sim,yt_avg, 'k--', 'LineWidth',1, 'DisplayName', 'Avg')
+for i = 1:N
+    plot(t_sim,yt_sim{i}, 'DisplayName',sprintf("S_%i", i))
+end
+%title('Agents tracking error'), legend, grid on
+xlabel('Time [s]'), ylabel('y_{tilde}')
+
 
 
 %% Time analysis
@@ -117,9 +135,9 @@ else
     % followers settling time
     times_agents = zeros(N,1);
     for i = 1:N
-        for t = flip(t_sim)
-            if abs(yi_sim{i}(t) - y0_sim(t)) > x0_ref(1)*output_fact*0.02
-                times_agents(i) = t;
+        for t_ind = length(t_sim):-1:1
+            if abs(yi_sim{i}(t_ind) - y0_sim(t_ind)) > max(x0_ref)*output_fact*0.02
+                times_agents(i) = t_sim(t_ind);
                 break;
             end
         end
