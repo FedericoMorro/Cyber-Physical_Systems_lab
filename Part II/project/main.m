@@ -16,7 +16,7 @@ N = 6;
 [Adj, g] = network_config("", N, 0);
 
 % reference to be tracked
-ref_type = "sinusoidal";
+ref_type = "step";
 [A_des_eig, x0_ref, t_fin] = reference_config(ref_type, 1, 0.5);
 output_fact = 708.27;
 
@@ -117,7 +117,7 @@ plot(t_sim,yt_avg, 'k--', 'LineWidth',1, 'DisplayName', 'Avg')
 for i = 1:N
     plot(t_sim,yt_sim{i}, 'DisplayName',sprintf("S_%i", i))
 end
-%title('Agents tracking error'), legend, grid on
+title('Agents tracking error'), legend, grid on
 xlabel('Time [s]'), ylabel('y_{tilde}')
 
 
